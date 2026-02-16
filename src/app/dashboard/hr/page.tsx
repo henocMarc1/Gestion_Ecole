@@ -115,7 +115,12 @@ function HRDashboard({
         .order('full_name');
 
       if (staffError) throw staffError;
-      setStaff(staffData || []);
+      setStaff(
+        (staffData || []).map((item: any) => ({
+          ...item,
+          employee: Array.isArray(item.employee) ? item.employee[0] : item.employee,
+        }))
+      );
 
       // Load classes
       const { data: classesData, error: classesError } = await supabase

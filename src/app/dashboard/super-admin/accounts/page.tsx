@@ -552,7 +552,7 @@ export default function AccountsPage() {
                 {['ADMIN', 'TEACHER', 'HR', 'ACCOUNTANT', 'SECRETARY'].includes(newUserData.role) && (
                   <div>
                     <label className="block text-sm font-medium text-neutral-700 mb-1">
-                      École * {newUserData.role !== 'SUPER_ADMIN' && '(Requis pour ce rôle)'}
+                      École * (Requis pour ce rôle)
                     </label>
                     <select
                       value={newUserData.school_id || ''}

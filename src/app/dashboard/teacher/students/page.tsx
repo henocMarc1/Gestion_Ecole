@@ -179,7 +179,7 @@ export default function MyStudentsPage() {
         </Card>
       ) : filteredStudents.length === 0 ? (
         <Card className="p-12 text-center border border-dashed border-neutral-300">
-          <Icons.Filter className="w-12 h-12 text-neutral-400 mx-auto mb-3" />
+          <Icons.Search className="w-12 h-12 text-neutral-400 mx-auto mb-3" />
           <h3 className="text-lg font-medium text-neutral-900 mb-1">Aucun résultat</h3>
           <p className="text-sm text-neutral-600">Vérifiez vos critères de recherche</p>
         </Card>
