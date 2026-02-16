@@ -6,7 +6,7 @@ import { Toaster } from 'sonner';
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
 export const metadata: Metadata = {
-  title: 'École Management - Système de Gestion Scolaire',
+  title: 'GSGA - Système de Gestion Scolaire',
   description: 'Plateforme complète de gestion d\'école maternelle et primaire',
   manifest: '/manifest.json',
   themeColor: '#f0701d',

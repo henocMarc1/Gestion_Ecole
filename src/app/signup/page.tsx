@@ -112,7 +112,7 @@ export default function SignupPage() {
         <div className="w-full max-w-md">
           {/* Header */}
           <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-white">École Management</h1>
+            <h1 className="text-4xl font-bold text-white">GSGA</h1>
             <p className="mt-2 text-primary-100">
               Créer le premier compte Super Admin
             </p>
