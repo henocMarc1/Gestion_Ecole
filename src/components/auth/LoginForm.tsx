@@ -134,16 +134,6 @@ export function LoginForm() {
         <div className="mt-6 text-center text-sm text-neutral-600">
           <p>Mot de passe oublié ? Contactez votre administrateur</p>
         </div>
-
-        {/* Lien inscription Super Admin */}
-        <div className="mt-4 text-center text-sm">
-          <p className="text-neutral-700">
-            Pas encore de compte Super Admin ?{' '}
-            <a href="/signup" className="text-primary-600 font-medium hover:underline">
-              Créer un compte
-            </a>
-          </p>
-        </div>
       </div>
     </div>
   );
