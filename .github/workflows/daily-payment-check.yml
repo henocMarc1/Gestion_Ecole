@@ -1,0 +1,56 @@
+name: Daily Payment Check
+
+# S'exécute automatiquement tous les jours à 8h00 (UTC+0)
+# Pour la Côte d'Ivoire (UTC+0), c'est parfait : 8h00
+on:
+  schedule:
+    # Cron: minute hour day month weekday
+    # 0 8 * * * = Tous les jours à 8h00
+    - cron: '0 8 * * *'
+  
+  # Permet aussi de déclencher manuellement depuis GitHub
+  workflow_dispatch:
+
+jobs:
+  check-payments:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📋 Check overdue payments and create reminders
+        run: |
+          echo "🚀 Starting daily payment check..."
+          
+          RESPONSE=$(curl -s -X POST \
+            "${{ secrets.SUPABASE_URL }}/functions/v1/daily-payment-check" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Content-Type: application/json")
+          
+          echo "📊 Response:"
+          echo "$RESPONSE" | jq '.'
+          
+          # Vérifier le succès
+          SUCCESS=$(echo "$RESPONSE" | jq -r '.success')
+          
+          if [ "$SUCCESS" = "true" ]; then
+            REMINDERS=$(echo "$RESPONSE" | jq -r '.remindersCreated')
+            EXCLUDED=$(echo "$RESPONSE" | jq -r '.studentsExcluded')
+            
+            echo "✅ Success!"
+            echo "📝 Reminders created: $REMINDERS"
+            echo "🚫 Students excluded: $EXCLUDED"
+            
+            # Envoyer une notification si des exclusions
+            if [ "$EXCLUDED" -gt 0 ]; then
+              echo "⚠️ WARNING: $EXCLUDED student(s) have been excluded!"
+            fi
+          else
+            ERROR=$(echo "$RESPONSE" | jq -r '.error')
+            echo "❌ Error: $ERROR"
+            exit 1
+          fi
+
+      - name: 📧 Send notification summary (optional)
+        if: success()
+        run: |
+          echo "✉️ Payment check completed successfully"
+          echo "Timestamp: $(date)"
