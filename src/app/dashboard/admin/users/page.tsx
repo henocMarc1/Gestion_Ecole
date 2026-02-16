@@ -19,6 +19,7 @@ interface User {
   phone: string | null;
   is_active: boolean;
   last_login_at: string | null;
+  created_at: string;
 }
 
 interface NewUser {
