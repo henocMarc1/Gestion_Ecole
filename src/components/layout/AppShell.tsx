@@ -25,18 +25,25 @@ const navigationItems: NavItem[] = [
   { label: 'Utilisateurs', href: '/dashboard/super-admin/accounts', icon: 'Users', roles: ['SUPER_ADMIN'] },
   
   // Directeur (Admin)
-  { label: 'Tableau de bord', href: '/dashboard/admin', icon: 'Home', roles: ['ADMIN'] },
-  { label: 'Années académiques', href: '/dashboard/admin/years', icon: 'Calendar', roles: ['ADMIN'] },
-  { label: 'Classes', href: '/dashboard/admin/classes', icon: 'BookOpen', roles: ['ADMIN'] },
-  { label: 'Élèves', href: '/dashboard/admin/students', icon: 'Student', roles: ['ADMIN'] },
-  { label: 'Emploi du temps', href: '/dashboard/admin/timetable', icon: 'Calendar', roles: ['ADMIN'] },
-  { label: 'Utilisateurs', href: '/dashboard/admin/users', icon: 'Users', roles: ['ADMIN'] },
-  { label: 'Frais de scolarité', href: '/dashboard/admin/tuition-fees', icon: 'DollarSign', roles: ['ADMIN'] },
-  { label: 'Rapports de collecte', href: '/dashboard/admin/tuition-reports', icon: 'BarChart', roles: ['ADMIN'] },
-  { label: 'Finances', href: '/dashboard/admin/finance', icon: 'DollarSign', roles: ['ADMIN'] },
-  { label: 'Notifications', href: '/dashboard/admin/notifications', icon: 'Activity', roles: ['ADMIN'] },
-  { label: 'Rapports', href: '/dashboard/admin/reports', icon: 'FileText', roles: ['ADMIN'] },
-  { label: 'Mes congés', href: '/dashboard/employee/leaves', icon: 'Calendar', roles: ['ADMIN'] },
+  { 
+    label: 'Direction', 
+    icon: 'Building', 
+    roles: ['ADMIN'],
+    children: [
+      { label: 'Tableau de bord', href: '/dashboard/admin', icon: 'Home', roles: ['ADMIN'] },
+      { label: 'Années scolaires', href: '/dashboard/admin/years', icon: 'Calendar', roles: ['ADMIN'] },
+      { label: 'Classes', href: '/dashboard/admin/classes', icon: 'BookOpen', roles: ['ADMIN'] },
+      { label: 'Élèves', href: '/dashboard/admin/students', icon: 'Student', roles: ['ADMIN'] },
+      { label: 'Emploi du temps', href: '/dashboard/admin/timetable', icon: 'Calendar', roles: ['ADMIN'] },
+      { label: 'Utilisateurs', href: '/dashboard/admin/users', icon: 'Users', roles: ['ADMIN'] },
+      { label: 'Frais de scolarité', href: '/dashboard/admin/tuition-fees', icon: 'DollarSign', roles: ['ADMIN'] },
+      { label: 'Rapports de collecte', href: '/dashboard/admin/tuition-reports', icon: 'BarChart', roles: ['ADMIN'] },
+      { label: 'Finances', href: '/dashboard/admin/finance', icon: 'DollarSign', roles: ['ADMIN'] },
+      { label: 'Notifications', href: '/dashboard/admin/notifications', icon: 'Activity', roles: ['ADMIN'] },
+      { label: 'Rapports', href: '/dashboard/admin/reports', icon: 'FileText', roles: ['ADMIN'] },
+      { label: 'Mes congés', href: '/dashboard/employee/leaves', icon: 'Calendar', roles: ['ADMIN'] },
+    ]
+  },
   
   // Vues des autres rôles pour le directeur
   { 
