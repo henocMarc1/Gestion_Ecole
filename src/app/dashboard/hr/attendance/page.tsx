@@ -35,6 +35,7 @@ export default function HRAttendancePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [showReportModal, setShowReportModal] = useState(false);
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [isGeneratingExcel, setIsGeneratingExcel] = useState(false);
 
   // Dates pour le rapport
   const [reportDates, setReportDates] = useState({
@@ -205,6 +206,56 @@ export default function HRAttendancePage() {
       toast.error('Erreur lors de la génération du rapport');
     } finally {
       setIsGeneratingReport(false);
+    }
+  };
+
+  const handleGenerateExcel = async () => {
+    if (!reportDates.startDate || !reportDates.endDate) {
+      toast.error('Sélectionnez les dates de début et de fin');
+      return;
+    }
+
+    if (new Date(reportDates.startDate) > new Date(reportDates.endDate)) {
+      toast.error('La date de début doit être antérieure à la date de fin');
+      return;
+    }
+
+    try {
+      setIsGeneratingExcel(true);
+      
+      const response = await fetch('/api/export/attendance-excel', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          startDate: reportDates.startDate,
+          endDate: reportDates.endDate,
+          schoolId: user?.school_id,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Erreur lors de la génération du rapport Excel');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `rapport-pointages-${reportDates.startDate}-${reportDates.endDate}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast.success('Rapport Excel généré avec succès');
+      setShowReportModal(false);
+    } catch (err) {
+      console.error('Erreur génération rapport Excel:', err);
+      toast.error('Erreur lors de la génération du rapport Excel');
+    } finally {
+      setIsGeneratingExcel(false);
     }
   };
 
@@ -451,7 +502,7 @@ export default function HRAttendancePage() {
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <Card className="bg-white p-6 max-w-md w-full shadow-xl">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-neutral-900">Générer un rapport PDF</h2>
+                <h2 className="text-xl font-semibold text-neutral-900">Générer un rapport</h2>
                 <button
                   onClick={() => setShowReportModal(false)}
                   className="text-neutral-500 hover:text-neutral-700"
@@ -500,24 +551,42 @@ export default function HRAttendancePage() {
                   variant="outline"
                   onClick={() => setShowReportModal(false)}
                   className="flex-1"
-                  disabled={isGeneratingReport}
+                  disabled={isGeneratingReport || isGeneratingExcel}
                 >
                   Annuler
                 </Button>
                 <Button
-                  onClick={handleGenerateReport}
-                  className="flex-1 bg-orange-600 hover:bg-orange-700"
-                  disabled={isGeneratingReport}
+                  onClick={handleGenerateExcel}
+                  variant="outline"
+                  className="flex-1 border-green-600 text-green-700 hover:bg-green-50"
+                  disabled={isGeneratingReport || isGeneratingExcel}
                 >
-                  {isGeneratingReport ? (
+                  {isGeneratingExcel ? (
                     <>
                       <Icons.Loader className="w-4 h-4 mr-2 animate-spin" />
-                      Génération...
+                      Excel...
                     </>
                   ) : (
                     <>
                       <Icons.FileText className="w-4 h-4 mr-2" />
-                      Générer
+                      Excel
+                    </>
+                  )}
+                </Button>
+                <Button
+                  onClick={handleGenerateReport}
+                  className="flex-1 bg-orange-600 hover:bg-orange-700"
+                  disabled={isGeneratingReport || isGeneratingExcel}
+                >
+                  {isGeneratingReport ? (
+                    <>
+                      <Icons.Loader className="w-4 h-4 mr-2 animate-spin" />
+                      PDF...
+                    </>
+                  ) : (
+                    <>
+                      <Icons.FileText className="w-4 h-4 mr-2" />
+                      PDF
                     </>
                   )}
                 </Button>
