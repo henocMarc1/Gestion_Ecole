@@ -33,6 +33,14 @@ export default function HRAttendancePage() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedEmployee, setSelectedEmployee] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+
+  // Dates pour le rapport
+  const [reportDates, setReportDates] = useState({
+    startDate: new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0],
+    endDate: new Date().toISOString().split('T')[0],
+  });
 
   // Form pour enregistrer un pointage
   const [newAttendance, setNewAttendance] = useState({
@@ -150,6 +158,56 @@ export default function HRAttendancePage() {
     }
   };
 
+  const handleGenerateReport = async () => {
+    if (!reportDates.startDate || !reportDates.endDate) {
+      toast.error('Sélectionnez les dates de début et de fin');
+      return;
+    }
+
+    if (new Date(reportDates.startDate) > new Date(reportDates.endDate)) {
+      toast.error('La date de début doit être antérieure à la date de fin');
+      return;
+    }
+
+    try {
+      setIsGeneratingReport(true);
+      
+      const response = await fetch('/api/pdf/attendance-report', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          startDate: reportDates.startDate,
+          endDate: reportDates.endDate,
+          schoolId: user?.school_id,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Erreur lors de la génération du rapport');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `rapport-pointages-${reportDates.startDate}-${reportDates.endDate}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast.success('Rapport généré avec succès');
+      setShowReportModal(false);
+    } catch (err) {
+      console.error('Erreur génération rapport:', err);
+      toast.error('Erreur lors de la génération du rapport');
+    } finally {
+      setIsGeneratingReport(false);
+    }
+  };
+
   const filteredAttendance = useMemo(() => {
     if (!selectedEmployee) return attendance;
     return attendance.filter(a => a.employee_id === selectedEmployee);
@@ -175,9 +233,18 @@ export default function HRAttendancePage() {
             <h1 className="text-3xl font-semibold text-neutral-900">Gestion des pointages</h1>
             <p className="text-sm text-neutral-600 mt-1">Enregistrez et gérez les pointages du personnel</p>
           </div>
-          <Button variant="outline" onClick={loadAttendance}>
-            <Icons.Activity className="w-4 h-4 mr-2" /> Actualiser
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowReportModal(true)}
+              className="border-orange-200 text-orange-700 hover:bg-orange-50"
+            >
+              <Icons.FileText className="w-4 h-4 mr-2" /> Rapport PDF
+            </Button>
+            <Button variant="outline" onClick={loadAttendance}>
+              <Icons.Activity className="w-4 h-4 mr-2" /> Actualiser
+            </Button>
+          </div>
         </div>
 
         {/* Stats */}
@@ -378,6 +445,86 @@ export default function HRAttendancePage() {
             )}
           </Card>
         </div>
+
+        {/* Modal - Générer un rapport */}
+        {showReportModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <Card className="bg-white p-6 max-w-md w-full shadow-xl">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold text-neutral-900">Générer un rapport PDF</h2>
+                <button
+                  onClick={() => setShowReportModal(false)}
+                  className="text-neutral-500 hover:text-neutral-700"
+                >
+                  <Icons.X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-4 mb-6">
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-1">
+                    Date de début
+                  </label>
+                  <input
+                    type="date"
+                    value={reportDates.startDate}
+                    onChange={e => setReportDates({ ...reportDates, startDate: e.target.value })}
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-1">
+                    Date de fin
+                  </label>
+                  <input
+                    type="date"
+                    value={reportDates.endDate}
+                    onChange={e => setReportDates({ ...reportDates, endDate: e.target.value })}
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
+                  <p className="font-medium mb-1">Le rapport inclura :</p>
+                  <ul className="list-disc list-inside space-y-1 text-xs">
+                    <li>Nombre total de retards et absences</li>
+                    <li>Classement des employés (meilleurs pointages)</li>
+                    <li>Détails des pointages pour la période</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowReportModal(false)}
+                  className="flex-1"
+                  disabled={isGeneratingReport}
+                >
+                  Annuler
+                </Button>
+                <Button
+                  onClick={handleGenerateReport}
+                  className="flex-1 bg-orange-600 hover:bg-orange-700"
+                  disabled={isGeneratingReport}
+                >
+                  {isGeneratingReport ? (
+                    <>
+                      <Icons.Loader className="w-4 h-4 mr-2 animate-spin" />
+                      Génération...
+                    </>
+                  ) : (
+                    <>
+                      <Icons.FileText className="w-4 h-4 mr-2" />
+                      Générer
+                    </>
+                  )}
+                </Button>
+              </div>
+            </Card>
+          </div>
+        )}
       </div>
     </div>
   );
