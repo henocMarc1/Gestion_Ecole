@@ -150,10 +150,16 @@ export function AppShell({ children }: AppShellProps) {
   );
   
   const toggleMenu = (label: string) => {
-    setOpenMenus(prev => ({
-      ...prev,
-      [label]: !prev[label]
-    }));
+    setOpenMenus(prev => {
+      const isCurrentlyOpen = prev[label];
+      if (isCurrentlyOpen) {
+        // Si déjà ouvert, on le ferme
+        return { ...prev, [label]: false };
+      } else {
+        // Sinon, on ferme tous les autres et on ouvre uniquement celui-ci
+        return { [label]: true };
+      }
+    });
   };
 
   // Fetch unread notifications count
