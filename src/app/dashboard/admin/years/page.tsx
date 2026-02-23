@@ -117,7 +117,7 @@ export default function YearsPage() {
       }]);
 
       if (error) throw error;
-      toast.success('Année académique créée avec succès');
+      toast.success('Année scolaire créée avec succès');
       setFormData({ name: '', start_date: '', end_date: '' });
       loadYears();
     } catch (error) {
@@ -152,7 +152,7 @@ export default function YearsPage() {
   };
 
   const handleDeleteYear = async (yearId: string) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer cette année académique ?')) return;
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cette année scolaire ?')) return;
     
     try {
       const { error } = await supabase
@@ -161,7 +161,7 @@ export default function YearsPage() {
         .eq('id', yearId);
 
       if (error) throw error;
-      toast.success('Année académique supprimée');
+      toast.success('Année scolaire supprimée');
       loadYears();
     } catch (error) {
       toast.error('Erreur lors de la suppression');
@@ -181,7 +181,7 @@ export default function YearsPage() {
       {/* Formulaire de création */}
       <Card className="border border-neutral-200 shadow-sm">
         <div className="p-6">
-          <h2 className="text-lg font-semibold text-neutral-900 mb-4">Nouvelle année académique</h2>
+          <h2 className="text-lg font-semibold text-neutral-900 mb-4">Nouvelle année scolaire</h2>
           <form onSubmit={handleCreateYear} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <Input
@@ -203,7 +203,7 @@ export default function YearsPage() {
               />
             </div>
             <Button type="submit" disabled={isCreating}>
-              {isCreating ? 'Création...' : 'Créer l\'année académique'}
+              {isCreating ? 'Création...' : 'Créer l\'année scolaire'}
             </Button>
           </form>
         </div>
@@ -217,8 +217,8 @@ export default function YearsPage() {
       ) : years.length === 0 ? (
         <Card className="p-12 text-center border border-dashed border-neutral-300">
           <Icons.Calendar className="w-12 h-12 text-neutral-400 mx-auto mb-3" />
-          <h3 className="text-lg font-medium text-neutral-900 mb-1">Aucune année académique</h3>
-          <p className="text-sm text-neutral-600">Créez la première année académique pour commencer</p>
+          <h3 className="text-lg font-medium text-neutral-900 mb-1">Aucune année scolaire</h3>
+          <p className="text-sm text-neutral-600">Créez la première année scolaire pour commencer</p>
         </Card>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

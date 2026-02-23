@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
       .eq('id', student.classes[0]?.school_id)
       .single()
 
-    // Get academic year
+    // Get school year
     const { data: academicYear } = await supabase
       .from('academic_years')
       .select('*')

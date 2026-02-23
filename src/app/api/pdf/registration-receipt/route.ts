@@ -154,7 +154,7 @@ async function generateRegistrationReceiptPdfLib(
   page.drawText(`Reçu N°: ${data.receiptNumber}`, { x: 30, y, size: 10, font: fontBold })
   page.drawText(`Date de paiement: ${new Date(data.paymentDate).toLocaleDateString('fr-FR')}`, { x: 250, y, size: 10, font: fontRegular })
   y -= 14
-  if (data.academicYear) page.drawText(`Année académique: ${data.academicYear}`, { x: 30, y, size: 10, font: fontRegular })
+  if (data.academicYear) page.drawText(`Année scolaire: ${data.academicYear}`, { x: 30, y, size: 10, font: fontRegular })
 
   y -= 12
   page.drawLine({ start: { x: 30, y }, end: { x: 565, y }, thickness: 1, color: rgb(0,0,0) })

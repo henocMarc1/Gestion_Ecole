@@ -362,7 +362,7 @@ export default function ClassesPage() {
           schedules: (schedules || [])
         });
       } else {
-        // Générer les mois en fonction de l'année académique
+        // Générer les mois en fonction de l'année scolaire
         const monthSchedules = generateMonthSchedules(currentYear);
         setTuitionFeeData({
           totalAmount: 0,
@@ -444,7 +444,7 @@ export default function ClassesPage() {
 
   const handleSaveTuitionFees = async () => {
     if (!selectedClass || !currentYear) {
-      toast.error('Classe ou année académique manquante');
+      toast.error('Classe ou année scolaire manquante');
       return;
     }
 
@@ -803,7 +803,7 @@ export default function ClassesPage() {
                 <div className="space-y-6">
                   <div className="space-y-3">
                     <label className="block text-sm font-medium text-neutral-900">
-                      Année académique
+                      Année scolaire
                     </label>
                     <select
                       value={currentYear?.id || ''}

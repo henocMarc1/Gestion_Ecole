@@ -123,7 +123,7 @@ export async function generateBulletinPDF(
       doc
         .fontSize(10)
         .font('Helvetica')
-        .text('Bulletin de Scolarité - Année Académique ' + bulletinData.academicYear, {
+        .text('Bulletin de Scolarité - Année Scolaire ' + bulletinData.academicYear, {
           align: 'center'
         })
         .moveDown(0.5)
@@ -344,17 +344,17 @@ export async function generateCertificatePDF(
 
       if (certificateData.certificateType === 'scolarite') {
         doc.text(
-          `est dûment inscrit(e) et poursuit sa scolarité en classe de ${certificateData.className} pour l'année académique ${certificateData.academicYear}.`,
+          `est dûment inscrit(e) et poursuit sa scolarité en classe de ${certificateData.className} pour l'année scolaire ${certificateData.academicYear}.`,
           { align: 'justify' }
         )
       } else if (certificateData.certificateType === 'reussite') {
         doc.text(
-          `a satisfait aux conditions requises et a réussi son année scolaire en classe de ${certificateData.className} pour l'année académique ${certificateData.academicYear}.`,
+          `a satisfait aux conditions requises et a réussi son année scolaire en classe de ${certificateData.className} pour l'année scolaire ${certificateData.academicYear}.`,
           { align: 'justify' }
         )
       } else if (certificateData.certificateType === 'assiduite') {
         doc.text(
-          `s'est distingué(e) par son assiduité et sa régularité en classe de ${certificateData.className} pendant l'année académique ${certificateData.academicYear}.`,
+          `s'est distingué(e) par son assiduité et sa régularité en classe de ${certificateData.className} pendant l'année scolaire ${certificateData.academicYear}.`,
           { align: 'justify' }
         )
       }

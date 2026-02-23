@@ -174,12 +174,12 @@ async function generatePaymentReceiptPdf(data: TuitionPaymentReceiptData): Promi
   y -= 12;
   page.drawLine({ start: { x: 30, y }, end: { x: 565, y }, thickness: 1, color: rgb(0, 0, 0) });
 
-  // Date du jour + année académique (alignement avec reçu d'inscription)
+  // Date du jour + année scolaire (alignement avec reçu d'inscription)
   const today = new Date();
   y -= 20;
   page.drawText(`Date: ${today.toLocaleDateString('fr-FR')}`, { x: 30, y, size: 10, font: helveticaBold });
   if (data.academic_year) {
-    page.drawText(`Année académique: ${data.academic_year}`, { x: 350, y, size: 10, font: helvetica });
+    page.drawText(`Année scolaire: ${data.academic_year}`, { x: 350, y, size: 10, font: helvetica });
   }
 
   y -= 12;
@@ -196,7 +196,7 @@ async function generatePaymentReceiptPdf(data: TuitionPaymentReceiptData): Promi
     { label: 'Matricule', value: data.student_matricule },
     { label: 'Nom et prénom', value: data.student_name },
     { label: 'Classe', value: data.class_name },
-    { label: 'Année académique', value: data.academic_year },
+    { label: 'Année scolaire', value: data.academic_year },
     { label: 'Mode de paiement', value: data.payment_method },
     { label: 'Référence', value: data.payment_reference || 'N/A' },
     { label: 'Date de règlement', value: new Date(data.payment_date).toLocaleDateString('fr-FR') },

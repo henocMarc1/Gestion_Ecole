@@ -91,7 +91,7 @@ export default function DocumentDownloadPage() {
     if (!selectedStudent || !selectedYear) {
       setGenerationStatus({
         type: 'error',
-        message: 'Veuillez sélectionner un élève et une année académique'
+        message: 'Veuillez sélectionner un élève et une année scolaire'
       })
       return
     }
@@ -237,7 +237,7 @@ export default function DocumentDownloadPage() {
         {/* Academic Year Selection */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Année Académique
+            Année Scolaire
           </label>
           <select
             value={selectedYear}

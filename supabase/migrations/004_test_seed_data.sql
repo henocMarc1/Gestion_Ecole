@@ -29,7 +29,7 @@ VALUES (
   'https://ecoltest.ci'
 ) RETURNING id INTO v_school_id;
 
--- 2. Créer une année académique
+-- 2. Créer une année scolaire
 INSERT INTO years (school_id, name, start_date, end_date, is_current)
 VALUES (
   v_school_id,
