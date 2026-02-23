@@ -12,9 +12,10 @@ import { supabase } from '@/lib/supabase';
 
 interface NavItem {
   label: string;
-  href: string;
+  href?: string;
   icon: keyof typeof Icons;
   roles: string[];
+  children?: NavItem[];
 }
 
 const navigationItems: NavItem[] = [
@@ -36,6 +37,47 @@ const navigationItems: NavItem[] = [
   { label: 'Notifications', href: '/dashboard/admin/notifications', icon: 'Activity', roles: ['ADMIN'] },
   { label: 'Rapports', href: '/dashboard/admin/reports', icon: 'FileText', roles: ['ADMIN'] },
   { label: 'Mes congés', href: '/dashboard/employee/leaves', icon: 'Calendar', roles: ['ADMIN'] },
+  
+  // Vues des autres rôles pour le directeur
+  { 
+    label: 'RH', 
+    icon: 'Users', 
+    roles: ['ADMIN'],
+    children: [
+      { label: 'Tableau de bord', href: '/dashboard/hr', icon: 'Home', roles: ['ADMIN'] },
+      { label: 'Personnel', href: '/dashboard/hr/employees', icon: 'Users', roles: ['ADMIN'] },
+      { label: 'Pointage', href: '/dashboard/hr/attendance', icon: 'Check', roles: ['ADMIN'] },
+      { label: 'Congés (Gestion)', href: '/dashboard/hr/leaves', icon: 'Calendar', roles: ['ADMIN'] },
+      { label: 'Emploi du temps', href: '/dashboard/hr/timetable', icon: 'Calendar', roles: ['ADMIN'] },
+    ]
+  },
+  { 
+    label: 'Comptabilité', 
+    icon: 'DollarSign', 
+    roles: ['ADMIN'],
+    children: [
+      { label: 'Tableau de bord', href: '/dashboard/accountant', icon: 'Home', roles: ['ADMIN'] },
+      { label: 'Frais de scolarité', href: '/dashboard/accountant/tuition-fees', icon: 'DollarSign', roles: ['ADMIN'] },
+      { label: 'Paiements frais', href: '/dashboard/accountant/tuition-payments', icon: 'Check', roles: ['ADMIN'] },
+      { label: 'Relances', href: '/dashboard/accountant/payment-reminders', icon: 'Activity', roles: ['ADMIN'] },
+      { label: 'Trésorerie', href: '/dashboard/accountant/treasury', icon: 'DollarSign', roles: ['ADMIN'] },
+      { label: 'Salaires', href: '/dashboard/accountant/payroll', icon: 'DollarSign', roles: ['ADMIN'] },
+      { label: 'Rapports', href: '/dashboard/accountant/reports', icon: 'BarChart', roles: ['ADMIN'] },
+    ]
+  },
+  { 
+    label: 'Secrétariat', 
+    icon: 'FileText', 
+    roles: ['ADMIN'],
+    children: [
+      { label: 'Tableau de bord', href: '/dashboard/secretary', icon: 'Home', roles: ['ADMIN'] },
+      { label: 'Inscrire un élève', href: '/dashboard/secretary/register-student', icon: 'UserPlus', roles: ['ADMIN'] },
+      { label: 'Élèves', href: '/dashboard/secretary/students', icon: 'Student', roles: ['ADMIN'] },
+      { label: 'Paiements frais', href: '/dashboard/secretary/tuition-payments', icon: 'Check', roles: ['ADMIN'] },
+      { label: 'Certificats', href: '/dashboard/secretary/certificates', icon: 'FileText', roles: ['ADMIN'] },
+      { label: 'Documents', href: '/dashboard/secretary/documents', icon: 'FileText', roles: ['ADMIN'] },
+    ]
+  },
   
   // RH
   { label: 'Tableau de bord', href: '/dashboard/hr', icon: 'Home', roles: ['HR'] },
@@ -101,10 +143,18 @@ export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
 
   const filteredNav = navigationItems.filter((item) =>
     item.roles.some((role) => hasRole(role))
   );
+  
+  const toggleMenu = (label: string) => {
+    setOpenMenus(prev => ({
+      ...prev,
+      [label]: !prev[label]
+    }));
+  };
 
   // Fetch unread notifications count
   useEffect(() => {
@@ -198,6 +248,73 @@ export function AppShell({ children }: AppShellProps) {
             <div className="flex-1 px-3 space-y-1">
               {filteredNav.map((item) => {
                 const Icon = Icons[item.icon];
+                
+                // Menu avec des enfants (sous-menu)
+                if (item.children && item.children.length > 0) {
+                  const isOpen = openMenus[item.label];
+                  const hasActiveChild = item.children.some(child => 
+                    child.href && (pathname === child.href || pathname?.startsWith(child.href + '/'))
+                  );
+                  
+                  return (
+                    <div key={item.label}>
+                      <button
+                        onClick={() => toggleMenu(item.label)}
+                        className={cn(
+                          'group w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-base border border-transparent',
+                          hasActiveChild
+                            ? 'bg-neutral-100 text-neutral-900 border-neutral-200'
+                            : 'text-neutral-700 hover:bg-neutral-100'
+                        )}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className={cn(
+                            'h-7 w-7 rounded-md flex items-center justify-center transition-colors',
+                            hasActiveChild ? 'bg-neutral-900 text-white' : 'bg-neutral-100 text-neutral-700 group-hover:bg-neutral-200'
+                          )}>
+                            <Icon className="h-4 w-4" />
+                          </span>
+                          {item.label}
+                        </div>
+                        <Icons.ChevronDown className={cn(
+                          'h-4 w-4 transition-transform',
+                          isOpen && 'rotate-180'
+                        )} />
+                      </button>
+                      
+                      {/* Sous-menu */}
+                      {isOpen && (
+                        <div className="mt-1 ml-4 pl-4 border-l-2 border-neutral-200 space-y-1">
+                          {item.children.map((child) => {
+                            if (!child.href) return null;
+                            const ChildIcon = Icons[child.icon];
+                            const isChildActive = pathname === child.href || pathname?.startsWith(child.href + '/');
+                            
+                            return (
+                              <Link
+                                key={child.href}
+                                href={child.href}
+                                onClick={() => setIsMobileMenuOpen(false)}
+                                className={cn(
+                                  'group flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-base',
+                                  isChildActive
+                                    ? 'bg-neutral-900 text-white shadow-sm'
+                                    : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900'
+                                )}
+                              >
+                                <ChildIcon className="h-4 w-4" />
+                                {child.label}
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+                
+                // Menu simple sans enfants
+                if (!item.href) return null;
                 const isActive = pathname === item.href || pathname?.startsWith(item.href + '/');
                 
                 return (
