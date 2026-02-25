@@ -25,6 +25,8 @@ interface User {
   };
 }
 
+type UserRole = 'SUPER_ADMIN' | 'ADMIN' | 'SECRETARY' | 'ACCOUNTANT' | 'TEACHER' | 'PARENT' | 'HR';
+
 const ROLE_LABELS: Record<string, string> = {
   SUPER_ADMIN: 'Super Admin',
   ADMIN: 'Directeur',
@@ -59,7 +61,7 @@ export default function AccountsPage() {
     email: '',
     full_name: '',
     phone: '',
-    role: 'TEACHER' as const,
+    role: 'TEACHER' as UserRole,
     school_id: '' as string | null,
     password: '',
     confirmPassword: '',
