@@ -200,17 +200,20 @@ export default function AccountsPage() {
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!newUserData.email || !newUserData.full_name || !newUserData.password) {
+    const isParentRole = newUserData.role === 'PARENT';
+    const effectivePassword = isParentRole ? 'Parent123' : newUserData.password;
+
+    if (!newUserData.email || !newUserData.full_name || (!isParentRole && !newUserData.password)) {
       toast.error('Email, nom et mot de passe sont requis');
       return;
     }
 
-    if (newUserData.password.length < 6) {
+    if (!isParentRole && newUserData.password.length < 6) {
       toast.error('Le mot de passe doit contenir au moins 6 caractères');
       return;
     }
 
-    if (newUserData.password !== newUserData.confirmPassword) {
+    if (!isParentRole && newUserData.password !== newUserData.confirmPassword) {
       toast.error('Les mots de passe ne correspondent pas');
       return;
     }
@@ -226,7 +229,7 @@ export default function AccountsPage() {
       // Créer le compte Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: newUserData.email,
-        password: newUserData.password,
+        password: effectivePassword,
         options: {
           data: {
             full_name: newUserData.full_name,
@@ -249,6 +252,7 @@ export default function AccountsPage() {
           role: newUserData.role,
           school_id: newUserData.school_id || null,
           is_active: true,
+          must_change_password: isParentRole,
         }]);
 
       if (userError) throw userError;
@@ -570,33 +574,41 @@ export default function AccountsPage() {
                   </div>
                 )}
 
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1">
-                    Mot de passe *
-                  </label>
-                  <Input
-                    type="password"
-                    placeholder="Minimum 6 caractères"
-                    value={newUserData.password}
-                    onChange={(e) => setNewUserData({ ...newUserData, password: e.target.value })}
-                    required
-                    minLength={6}
-                  />
-                </div>
+                {newUserData.role === 'PARENT' ? (
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                    Mot de passe parent par défaut: <span className="font-semibold">Parent123</span>. Le parent devra le changer à la première connexion.
+                  </div>
+                ) : (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-neutral-700 mb-1">
+                        Mot de passe *
+                      </label>
+                      <Input
+                        type="password"
+                        placeholder="Minimum 6 caractères"
+                        value={newUserData.password}
+                        onChange={(e) => setNewUserData({ ...newUserData, password: e.target.value })}
+                        required
+                        minLength={6}
+                      />
+                    </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1">
-                    Confirmer le mot de passe *
-                  </label>
-                  <Input
-                    type="password"
-                    placeholder="Retapez le mot de passe"
-                    value={newUserData.confirmPassword}
-                    onChange={(e) => setNewUserData({ ...newUserData, confirmPassword: e.target.value })}
-                    required
-                    minLength={6}
-                  />
-                </div>
+                    <div>
+                      <label className="block text-sm font-medium text-neutral-700 mb-1">
+                        Confirmer le mot de passe *
+                      </label>
+                      <Input
+                        type="password"
+                        placeholder="Retapez le mot de passe"
+                        value={newUserData.confirmPassword}
+                        onChange={(e) => setNewUserData({ ...newUserData, confirmPassword: e.target.value })}
+                        required
+                        minLength={6}
+                      />
+                    </div>
+                  </>
+                )}
 
                 <div className="flex gap-3">
                   <Button type="submit" disabled={isCreating} className="flex-1">
