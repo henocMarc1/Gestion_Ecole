@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/Card';
@@ -65,7 +65,7 @@ export default function StudentsPage() {
     filterStudents();
   }, [searchTerm, students, classFilter, genderFilter, sortBy]);
 
-  // Abonnement aux changements des élèves
+  // Abonnement aux changements des Ã©lÃ¨ves
   useRealtimeSubscription({
     table: 'students',
     event: '*',
@@ -83,17 +83,17 @@ export default function StudentsPage() {
     switch (payload.eventType) {
       case 'INSERT':
         setStudents(prev => [newStudent, ...prev]);
-        toast.success('Nouvel élève ajouté');
+        toast.success('Nouvel Ã©lÃ¨ve ajoutÃ©');
         break;
       case 'UPDATE':
         setStudents(prev =>
           prev.map(s => s.id === newStudent.id ? { ...s, ...newStudent } : s)
         );
-        toast.success('Élève mis à jour');
+        toast.success('Ã‰lÃ¨ve mis Ã  jour');
         break;
       case 'DELETE':
         setStudents(prev => prev.filter(s => s.id !== oldStudent.id));
-        toast.success('Élève supprimé');
+        toast.success('Ã‰lÃ¨ve supprimÃ©');
         break;
     }
   };
@@ -128,7 +128,7 @@ export default function StudentsPage() {
         if (classIds.length > 0) {
           studentsQuery = studentsQuery.in('class_id', classIds);
         } else {
-          studentsQuery = studentsQuery.eq('id', '__none__');
+          studentsQuery = studentsQuery.eq('id', '00000000-0000-0000-0000-000000000000');
         }
       }
 
@@ -152,27 +152,27 @@ export default function StudentsPage() {
 
   const handleExportStudents = async () => {
     try {
-      // Récupérer les infos de l'école
+      // RÃ©cupÃ©rer les infos de l'Ã©cole
       const { data: school } = await supabase
         .from('schools')
         .select('name, logo_url, address, phone')
         .eq('id', user?.school_id)
         .single();
 
-      const headers = ['N°', 'Matricule', 'Prénom', 'Nom', 'Classe', 'Genre', 'Date de naissance', 'Date d\'inscription'];
+      const headers = ['NÂ°', 'Matricule', 'PrÃ©nom', 'Nom', 'Classe', 'Genre', 'Date de naissance', 'Date d\'inscription'];
       const rows = filteredStudents.map((s, index) => [
         String(index + 1),
         s.matricule || '-',
         s.first_name,
         s.last_name,
         s.class?.name || '-',
-        s.gender === 'M' ? 'Masculin' : 'Féminin',
+        s.gender === 'M' ? 'Masculin' : 'FÃ©minin',
         s.date_of_birth ? new Date(s.date_of_birth).toLocaleDateString('fr-FR') : '-',
         s.enrollment_date ? new Date(s.enrollment_date).toLocaleDateString('fr-FR') : '-',
       ]);
 
       await exportToPDFTable(
-        'Liste des Élèves',
+        'Liste des Ã‰lÃ¨ves',
         headers,
         rows,
         `eleves_${new Date().toISOString().split('T')[0]}`,
@@ -183,7 +183,7 @@ export default function StudentsPage() {
           schoolPhone: school?.phone,
         }
       );
-      toast.success('Liste des élèves exportée en PDF');
+      toast.success('Liste des Ã©lÃ¨ves exportÃ©e en PDF');
     } catch (error) {
       toast.error('Erreur lors de l\'export');
       console.error(error);
@@ -193,17 +193,17 @@ export default function StudentsPage() {
   const handleExportStudentsCSV = async () => {
     try {
       const data = filteredStudents.map((s, index) => ({
-        'N°': index + 1,
+        'NÂ°': index + 1,
         'Matricule': s.matricule || '-',
-        'Prénom': s.first_name,
+        'PrÃ©nom': s.first_name,
         'Nom': s.last_name,
         'Classe': s.class?.name || '-',
-        'Genre': s.gender === 'M' ? 'Masculin' : 'Féminin',
+        'Genre': s.gender === 'M' ? 'Masculin' : 'FÃ©minin',
         'Date de naissance': s.date_of_birth ? new Date(s.date_of_birth).toLocaleDateString('fr-FR') : '-',
         'Date d\'inscription': s.enrollment_date ? new Date(s.enrollment_date).toLocaleDateString('fr-FR') : '-',
       }));
 
-      // Utiliser l'API serveur pour le téléchargement Excel (plus fiable)
+      // Utiliser l'API serveur pour le tÃ©lÃ©chargement Excel (plus fiable)
       const response = await fetch('/api/export/excel', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -213,7 +213,7 @@ export default function StudentsPage() {
         })
       });
 
-      if (!response.ok) throw new Error('Erreur téléchargement');
+      if (!response.ok) throw new Error('Erreur tÃ©lÃ©chargement');
 
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
@@ -225,7 +225,7 @@ export default function StudentsPage() {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
 
-      toast.success('Fichier Excel téléchargé');
+      toast.success('Fichier Excel tÃ©lÃ©chargÃ©');
     } catch (error) {
       toast.error('Erreur lors de l\'export');
       console.error(error);
@@ -270,7 +270,7 @@ export default function StudentsPage() {
   const findOrCreateParent = async (parentData: any) => {
     if (!user?.school_id) return null;
 
-    // Vérifier si le parent existe déjà par email
+    // VÃ©rifier si le parent existe dÃ©jÃ  par email
     if (parentData.email) {
       const { data: existingParents } = await supabase
         .from('users')
@@ -288,10 +288,10 @@ export default function StudentsPage() {
     // Sauvegarder la session actuelle de l'admin
     const { data: { session: currentSession } } = await supabase.auth.getSession();
 
-    // Créer d'abord le compte Auth du parent
+    // CrÃ©er d'abord le compte Auth du parent
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: parentData.email,
-      password: 'Parent123!', // Mot de passe par défaut
+      password: 'Parent123!', // Mot de passe par dÃ©faut
       options: {
         data: {
           full_name: `${parentData.first_name} ${parentData.last_name}`,
@@ -301,9 +301,9 @@ export default function StudentsPage() {
     });
 
     if (authError) throw authError;
-    if (!authData.user) throw new Error('Création du compte parent échouée');
+    if (!authData.user) throw new Error('CrÃ©ation du compte parent Ã©chouÃ©e');
 
-    // Créer ensuite l'utilisateur dans la table users avec l'ID d'Auth
+    // CrÃ©er ensuite l'utilisateur dans la table users avec l'ID d'Auth
     const { data: newParent, error: parentError } = await supabase
       .from('users')
       .insert([{
@@ -335,7 +335,7 @@ export default function StudentsPage() {
   const handleCreateStudent = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.first_name || !formData.last_name || !formData.date_of_birth || !formData.class_id) {
-      toast.error('Le prénom, nom, date de naissance et classe sont requis');
+      toast.error('Le prÃ©nom, nom, date de naissance et classe sont requis');
       return;
     }
 
@@ -346,10 +346,10 @@ export default function StudentsPage() {
 
     setIsCreating(true);
     try {
-      // Générer le matricule
+      // GÃ©nÃ©rer le matricule
       const matricule = generateMatricule(user?.school_id || '', formData.first_name);
 
-      // Trouver ou créer le parent
+      // Trouver ou crÃ©er le parent
       const parentResult = await findOrCreateParent({
         email: formData.parent_email,
         first_name: formData.parent_first_name,
@@ -358,13 +358,13 @@ export default function StudentsPage() {
       });
 
       if (!parentResult) {
-        throw new Error('Erreur lors de la création du parent');
+        throw new Error('Erreur lors de la crÃ©ation du parent');
       }
 
       const parentId = parentResult.id;
       const isNewParent = parentResult.isNew;
 
-      // Créer l'élève
+      // CrÃ©er l'Ã©lÃ¨ve
       const { data: newStudent, error: studentError } = await supabase
         .from('students')
         .insert([{
@@ -382,13 +382,13 @@ export default function StudentsPage() {
 
       if (studentError) throw studentError;
 
-      // Créer la relation parent-élève
+      // CrÃ©er la relation parent-Ã©lÃ¨ve
       const { error: linkError } = await supabase
         .from('parents_students')
         .insert([{
           parent_id: parentId,
           student_id: newStudent.id,
-          relationship: 'Tuteur', // Valeur par défaut
+          relationship: 'Tuteur', // Valeur par dÃ©faut
           is_primary_contact: true,
         }]);
 
@@ -396,11 +396,11 @@ export default function StudentsPage() {
 
       if (isNewParent) {
         toast.success(
-          `Élève créé avec succès! Matricule: ${matricule}\n\nCompte parent créé:\nEmail: ${formData.parent_email}\nMot de passe: Parent123!\n(Le parent devra changer ce mot de passe à la première connexion)`,
+          `Ã‰lÃ¨ve crÃ©Ã© avec succÃ¨s! Matricule: ${matricule}\n\nCompte parent crÃ©Ã©:\nEmail: ${formData.parent_email}\nMot de passe: Parent123!\n(Le parent devra changer ce mot de passe Ã  la premiÃ¨re connexion)`,
           { duration: 10000 }
         );
       } else {
-        toast.success(`Élève créé avec succès! Matricule: ${matricule}`);
+        toast.success(`Ã‰lÃ¨ve crÃ©Ã© avec succÃ¨s! Matricule: ${matricule}`);
       }
       setFormData({
         first_name: '',
@@ -416,7 +416,7 @@ export default function StudentsPage() {
       setIsModalOpen(false);
       loadData();
     } catch (error: any) {
-      toast.error(error.message || 'Erreur lors de la création');
+      toast.error(error.message || 'Erreur lors de la crÃ©ation');
       console.error(error);
     } finally {
       setIsCreating(false);
@@ -424,7 +424,7 @@ export default function StudentsPage() {
   };
 
   const handleDeleteStudent = async (studentId: string) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer cet élève ?')) return;
+    if (!confirm('ÃŠtes-vous sÃ»r de vouloir supprimer cet Ã©lÃ¨ve ?')) return;
     
     try {
       const { error } = await supabase
@@ -433,7 +433,7 @@ export default function StudentsPage() {
         .eq('id', studentId);
 
       if (error) throw error;
-      toast.success('Élève supprimé');
+      toast.success('Ã‰lÃ¨ve supprimÃ©');
       loadData();
     } catch (error) {
       toast.error('Erreur lors de la suppression');
@@ -446,7 +446,7 @@ export default function StudentsPage() {
     setNewClassId(student.class_id || '');
     setIsDetailsModalOpen(true);
     
-    // Charger les parents de l'élève
+    // Charger les parents de l'Ã©lÃ¨ve
     setIsLoadingParents(true);
     try {
       const { data, error } = await supabase
@@ -466,7 +466,7 @@ export default function StudentsPage() {
 
   const handleUpdateClass = async () => {
     if (!selectedStudent || !newClassId) {
-      toast.error('Veuillez sélectionner une classe');
+      toast.error('Veuillez sÃ©lectionner une classe');
       return;
     }
 
@@ -479,11 +479,11 @@ export default function StudentsPage() {
 
       if (error) throw error;
       
-      toast.success('Classe mise à jour avec succès');
+      toast.success('Classe mise Ã  jour avec succÃ¨s');
       setIsDetailsModalOpen(false);
       loadData();
     } catch (error) {
-      toast.error('Erreur lors de la mise à jour');
+      toast.error('Erreur lors de la mise Ã  jour');
       console.error(error);
     } finally {
       setIsUpdatingClass(false);
@@ -494,9 +494,9 @@ export default function StudentsPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-semibold text-neutral-900">Gestion des élèves</h1>
+          <h1 className="text-3xl font-semibold text-neutral-900">Gestion des Ã©lÃ¨ves</h1>
           <p className="text-sm text-neutral-600 mt-1">
-            Créez et gérez les dossiers des élèves ({filteredStudents.length} au total)
+            CrÃ©ez et gÃ©rez les dossiers des Ã©lÃ¨ves ({filteredStudents.length} au total)
           </p>
         </div>
         <div className="flex gap-3">
@@ -510,18 +510,18 @@ export default function StudentsPage() {
           </Button>
           <Button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2">
             <Icons.Plus className="w-4 h-4" />
-            Ajouter un élève
+            Ajouter un Ã©lÃ¨ve
           </Button>
         </div>
       </div>
 
-      {/* Modal de création */}
+      {/* Modal de crÃ©ation */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <Card className="w-full max-w-3xl max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-semibold text-neutral-900">Nouvel élève</h2>
+                <h2 className="text-lg font-semibold text-neutral-900">Nouvel Ã©lÃ¨ve</h2>
                 <button
                   onClick={() => setIsModalOpen(false)}
                   className="text-neutral-400 hover:text-neutral-600"
@@ -530,12 +530,12 @@ export default function StudentsPage() {
                 </button>
               </div>
               <form onSubmit={handleCreateStudent} className="space-y-6">
-                {/* Informations de l'élève */}
+                {/* Informations de l'Ã©lÃ¨ve */}
                 <div>
-                  <h3 className="text-sm font-medium text-neutral-700 mb-3">Informations de l'élève</h3>
+                  <h3 className="text-sm font-medium text-neutral-700 mb-3">Informations de l'Ã©lÃ¨ve</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <Input
-                      placeholder="Prénom *"
+                      placeholder="PrÃ©nom *"
                       value={formData.first_name}
                       onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
                       required
@@ -560,7 +560,7 @@ export default function StudentsPage() {
                       required
                     >
                       <option value="M">Masculin</option>
-                      <option value="F">Féminin</option>
+                      <option value="F">FÃ©minin</option>
                     </select>
                     <select
                       value={formData.class_id}
@@ -568,7 +568,7 @@ export default function StudentsPage() {
                       className="px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 md:col-span-2"
                       required
                     >
-                      <option value="">Sélectionner une classe *</option>
+                      <option value="">SÃ©lectionner une classe *</option>
                       {classes.map(c => (
                         <option key={c.id} value={c.id}>{c.name}</option>
                       ))}
@@ -581,7 +581,7 @@ export default function StudentsPage() {
                   <h3 className="text-sm font-medium text-neutral-700 mb-3">Informations du parent/tuteur</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <Input
-                      placeholder="Prénom du parent *"
+                      placeholder="PrÃ©nom du parent *"
                       value={formData.parent_first_name}
                       onChange={(e) => setFormData({ ...formData, parent_first_name: e.target.value })}
                       required
@@ -600,20 +600,20 @@ export default function StudentsPage() {
                       required
                     />
                     <Input
-                      placeholder="Téléphone du parent"
+                      placeholder="TÃ©lÃ©phone du parent"
                       type="tel"
                       value={formData.parent_phone}
                       onChange={(e) => setFormData({ ...formData, parent_phone: e.target.value })}
                     />
                   </div>
                   <p className="text-xs text-neutral-500 mt-2">
-                    Si le parent existe déjà avec cet email, il sera automatiquement lié. Sinon, un nouveau compte sera créé.
+                    Si le parent existe dÃ©jÃ  avec cet email, il sera automatiquement liÃ©. Sinon, un nouveau compte sera crÃ©Ã©.
                   </p>
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-3">
                   <Button type="submit" disabled={isCreating} className="flex-1">
-                    {isCreating ? 'Création...' : 'Créer l\'élève'}
+                    {isCreating ? 'CrÃ©ation...' : 'CrÃ©er l\'Ã©lÃ¨ve'}
                   </Button>
                   <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>
                     Annuler
@@ -625,13 +625,13 @@ export default function StudentsPage() {
         </div>
       )}
 
-      {/* Modal de détails */}
+      {/* Modal de dÃ©tails */}
       {isDetailsModalOpen && selectedStudent && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-semibold text-neutral-900">Détails de l'élève</h2>
+                <h2 className="text-xl font-semibold text-neutral-900">DÃ©tails de l'Ã©lÃ¨ve</h2>
                 <button
                   onClick={() => setIsDetailsModalOpen(false)}
                   className="text-neutral-400 hover:text-neutral-600"
@@ -641,11 +641,11 @@ export default function StudentsPage() {
               </div>
 
               <div className="space-y-6">
-                {/* Informations générales */}
+                {/* Informations gÃ©nÃ©rales */}
                 <div>
                   <h3 className="text-sm font-medium text-neutral-700 mb-4 flex items-center gap-2">
                     <Icons.Student className="w-4 h-4" />
-                    Informations générales
+                    Informations gÃ©nÃ©rales
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-neutral-50 p-4 rounded-lg">
                     <div>
@@ -669,7 +669,7 @@ export default function StudentsPage() {
                     <div>
                       <p className="text-xs text-neutral-500">Genre</p>
                       <p className="text-sm text-neutral-900">
-                        {selectedStudent.gender === 'M' ? 'Masculin' : 'Féminin'}
+                        {selectedStudent.gender === 'M' ? 'Masculin' : 'FÃ©minin'}
                       </p>
                     </div>
                     <div>
@@ -681,7 +681,7 @@ export default function StudentsPage() {
                     <div>
                       <p className="text-xs text-neutral-500">Classe actuelle</p>
                       <p className="text-sm font-medium text-neutral-900">
-                        {selectedStudent.class?.name || 'Non assigné'}
+                        {selectedStudent.class?.name || 'Non assignÃ©'}
                       </p>
                     </div>
                   </div>
@@ -699,7 +699,7 @@ export default function StudentsPage() {
                     </div>
                   ) : studentParents.length === 0 ? (
                     <div className="bg-neutral-50 p-4 rounded-lg text-center">
-                      <p className="text-sm text-neutral-600">Aucun parent enregistré</p>
+                      <p className="text-sm text-neutral-600">Aucun parent enregistrÃ©</p>
                     </div>
                   ) : (
                     <div className="space-y-3">
@@ -728,7 +728,7 @@ export default function StudentsPage() {
                               </p>
                             </div>
                             <div>
-                              <p className="text-xs text-neutral-500">Téléphone</p>
+                              <p className="text-xs text-neutral-500">TÃ©lÃ©phone</p>
                               <p className="text-sm text-neutral-900">
                                 {parent.users?.phone || '-'}
                               </p>
@@ -744,12 +744,12 @@ export default function StudentsPage() {
                 <div>
                   <h3 className="text-sm font-medium text-neutral-700 mb-4 flex items-center gap-2">
                     <Icons.BookOpen className="w-4 h-4" />
-                    Assigner à une classe
+                    Assigner Ã  une classe
                   </h3>
                   <div className="bg-primary-50 border border-primary-200 p-4 rounded-lg space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-neutral-700 mb-2">
-                        Sélectionner une nouvelle classe
+                        SÃ©lectionner une nouvelle classe
                       </label>
                       <select
                         value={newClassId}
@@ -769,17 +769,17 @@ export default function StudentsPage() {
                       disabled={isUpdatingClass || newClassId === selectedStudent.class_id}
                       className="w-full"
                     >
-                      {isUpdatingClass ? 'Mise à jour...' : 'Mettre à jour la classe'}
+                      {isUpdatingClass ? 'Mise Ã  jour...' : 'Mettre Ã  jour la classe'}
                     </Button>
                     {newClassId === selectedStudent.class_id && (
                       <p className="text-xs text-neutral-600 text-center">
-                        L'élève est déjà dans cette classe
+                        L'Ã©lÃ¨ve est dÃ©jÃ  dans cette classe
                       </p>
                     )}
                   </div>
                 </div>
 
-                {/* Actions supplémentaires */}
+                {/* Actions supplÃ©mentaires */}
                 <div className="flex gap-3 pt-4 border-t">
                   <Button
                     variant="outline"
@@ -797,7 +797,7 @@ export default function StudentsPage() {
                     className="text-danger-600 hover:bg-danger-50"
                   >
                     <Icons.Trash className="w-4 h-4 mr-2" />
-                    Supprimer l'élève
+                    Supprimer l'Ã©lÃ¨ve
                   </Button>
                 </div>
               </div>
@@ -837,7 +837,7 @@ export default function StudentsPage() {
             className="px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500"
           >
             <option value="ALL">Tous les genres</option>
-            <option value="M">Garçons</option>
+            <option value="M">GarÃ§ons</option>
             <option value="F">Filles</option>
           </select>
           
@@ -846,9 +846,9 @@ export default function StudentsPage() {
             onChange={(e) => setSortBy(e.target.value as any)}
             className="px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500"
           >
-            <option value="name-asc">Nom (A → Z)</option>
-            <option value="name-desc">Nom (Z → A)</option>
-            <option value="date-enrolled">Plus récents</option>
+            <option value="name-asc">Nom (A â†’ Z)</option>
+            <option value="name-desc">Nom (Z â†’ A)</option>
+            <option value="date-enrolled">Plus rÃ©cents</option>
           </select>
         </div>
       </Card>
@@ -861,7 +861,7 @@ export default function StudentsPage() {
       ) : filteredStudents.length === 0 ? (
         <Card className="p-12 text-center border border-dashed border-neutral-300">
           <Icons.Student className="w-12 h-12 text-neutral-400 mx-auto mb-3" />
-          <h3 className="text-lg font-medium text-neutral-900 mb-1">Aucun élève</h3>
+          <h3 className="text-lg font-medium text-neutral-900 mb-1">Aucun Ã©lÃ¨ve</h3>
         </Card>
       ) : (
         <Card className="border border-neutral-200 shadow-sm overflow-hidden">
@@ -891,7 +891,7 @@ export default function StudentsPage() {
                           className="px-3 py-2 text-xs font-medium text-primary-600 hover:bg-primary-50 rounded-lg transition-colors inline-flex items-center gap-2"
                         >
                           <Icons.Eye className="w-4 h-4" />
-                          Détails
+                          DÃ©tails
                         </Link>
                         <p className="font-medium text-neutral-900">
                           {student.first_name} {student.last_name}
@@ -901,7 +901,7 @@ export default function StudentsPage() {
                     <td className="px-4 py-3 text-sm text-neutral-600">
                       {new Date(student.date_of_birth).toLocaleDateString('fr-FR')}
                     </td>
-                    <td className="px-4 py-3 text-sm">{student.gender === 'M' ? 'Masculin' : 'Féminin'}</td>
+                    <td className="px-4 py-3 text-sm">{student.gender === 'M' ? 'Masculin' : 'FÃ©minin'}</td>
                     <td className="px-4 py-3 text-sm">{student.class?.name || '-'}</td>
                     <td className="px-4 py-3 text-sm text-neutral-600">
                       {new Date(student.enrollment_date).toLocaleDateString('fr-FR')}
@@ -934,3 +934,4 @@ export default function StudentsPage() {
     </div>
   );
 }
+

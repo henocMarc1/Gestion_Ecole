@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import type { ComponentType } from 'react';
@@ -86,7 +86,7 @@ export default function SecretaryDashboard() {
         if (classIds.length > 0) {
           studentsQuery = studentsQuery.in('class_id', classIds);
         } else {
-          studentsQuery = studentsQuery.eq('id', '__none__');
+          studentsQuery = studentsQuery.eq('id', '00000000-0000-0000-0000-000000000000');
         }
       }
 
@@ -206,7 +206,7 @@ export default function SecretaryDashboard() {
         if (studentIds.length > 0) {
           absencesQuery = absencesQuery.in('student_id', studentIds);
         } else {
-          absencesQuery = absencesQuery.eq('id', '__none__');
+          absencesQuery = absencesQuery.eq('id', '00000000-0000-0000-0000-000000000000');
         }
       }
 
@@ -214,7 +214,7 @@ export default function SecretaryDashboard() {
 
       const absencesByClass: Record<string, { name: string; count: number }> = {};
       absencesData?.forEach((a: any) => {
-        const className = a.students?.classes?.name || 'Non assigné';
+        const className = a.students?.classes?.name || 'Non assignÃ©';
         if (!absencesByClass[className]) {
           absencesByClass[className] = { name: className, count: 0 };
         }
@@ -270,21 +270,21 @@ export default function SecretaryDashboard() {
   const actions: ActionItem[] = [
     {
       title: 'Gestion des Certificats',
-      description: 'Demandes et émission de certificats',
+      description: 'Demandes et Ã©mission de certificats',
       icon: Icons.FileText,
       href: '/dashboard/secretary/certificates',
       color: 'blue',
     },
     {
-      title: 'Registro des Étudiants',
-      description: 'Inscrire de nouveaux étudiants',
+      title: 'Registro des Ã‰tudiants',
+      description: 'Inscrire de nouveaux Ã©tudiants',
       icon: Icons.Users,
       href: '/dashboard/secretary/register-student',
       color: 'green',
     },
     {
-      title: 'Liste des Étudiants',
-      description: 'Consulter tous les étudiants',
+      title: 'Liste des Ã‰tudiants',
+      description: 'Consulter tous les Ã©tudiants',
       icon: Icons.BookOpen,
       href: '/dashboard/secretary/students',
       color: 'purple',
@@ -308,10 +308,10 @@ export default function SecretaryDashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Secrétariat</h1>
+        <h1 className="text-3xl font-bold text-gray-900">SecrÃ©tariat</h1>
         <p className="text-gray-600 mt-2">
-          Gestion administrative et documents de l'école
-          {selectedYear?.name ? ` - Année: ${selectedYear.name}` : ''}
+          Gestion administrative et documents de l'Ã©cole
+          {selectedYear?.name ? ` - AnnÃ©e: ${selectedYear.name}` : ''}
         </p>
       </div>
 
@@ -320,7 +320,7 @@ export default function SecretaryDashboard() {
           <div className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 font-medium">Étudiants</p>
+                <p className="text-sm text-gray-600 font-medium">Ã‰tudiants</p>
                 <p className="text-3xl font-bold text-blue-900 mt-1">{stats.totalStudents}</p>
               </div>
               <Icons.Users className="w-12 h-12 text-blue-300" />
@@ -344,7 +344,7 @@ export default function SecretaryDashboard() {
           <div className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 font-medium">Certificats (Émis)</p>
+                <p className="text-sm text-gray-600 font-medium">Certificats (Ã‰mis)</p>
                 <p className="text-3xl font-bold text-green-900 mt-1">{stats.certificates.issued}</p>
               </div>
               <Icons.CheckCircle className="w-12 h-12 text-green-300" />
@@ -353,14 +353,14 @@ export default function SecretaryDashboard() {
         </Card>
       </div>
 
-      {/* KPI Finance & Qualité */}
+      {/* KPI Finance & QualitÃ© */}
       <Card>
         <div className="p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Indicateurs Finance & Qualité</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Indicateurs Finance & QualitÃ©</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="bg-red-50 border border-red-200 rounded-lg p-4">
               <div className="flex items-center justify-between mb-2">
-                <p className="text-sm text-gray-600 font-medium">Taux d'impayés</p>
+                <p className="text-sm text-gray-600 font-medium">Taux d'impayÃ©s</p>
                 <Icons.AlertCircle className="w-5 h-5 text-red-500" />
               </div>
               <p className="text-2xl font-bold text-red-700">{stats.finance.unpaidRate}%</p>
@@ -377,7 +377,7 @@ export default function SecretaryDashboard() {
 
             <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
               <div className="flex items-center justify-between mb-2">
-                <p className="text-sm text-gray-600 font-medium">Classes surchargées</p>
+                <p className="text-sm text-gray-600 font-medium">Classes surchargÃ©es</p>
                 <Icons.AlertTriangle className="w-5 h-5 text-orange-500" />
               </div>
               <p className="text-2xl font-bold text-orange-700">
@@ -431,7 +431,7 @@ export default function SecretaryDashboard() {
                 <action.icon className="w-8 h-8 text-gray-400 ml-4" />
               </div>
               <div className="mt-4 flex items-center text-blue-600 text-sm font-medium">
-                Accéder <Icons.ChevronRight className="w-4 h-4 ml-2" />
+                AccÃ©der <Icons.ChevronRight className="w-4 h-4 ml-2" />
               </div>
             </div>
           </Card>
@@ -448,15 +448,15 @@ export default function SecretaryDashboard() {
             </li>
             <li className="flex items-start">
               <Icons.CheckCircle className="w-4 h-4 text-blue-500 mr-3 mt-0.5 flex-shrink-0" />
-              <span>Maintenir à jour la liste des étudiants</span>
+              <span>Maintenir Ã  jour la liste des Ã©tudiants</span>
             </li>
             <li className="flex items-start">
               <Icons.CheckCircle className="w-4 h-4 text-blue-500 mr-3 mt-0.5 flex-shrink-0" />
-              <span>Archiver les documents officiels en sécurité</span>
+              <span>Archiver les documents officiels en sÃ©curitÃ©</span>
             </li>
             <li className="flex items-start">
               <Icons.CheckCircle className="w-4 h-4 text-blue-500 mr-3 mt-0.5 flex-shrink-0" />
-              <span>Vérifier les demandes d'inscription nouveau</span>
+              <span>VÃ©rifier les demandes d'inscription nouveau</span>
             </li>
           </ul>
         </div>
@@ -464,3 +464,4 @@ export default function SecretaryDashboard() {
     </div>
   );
 }
+

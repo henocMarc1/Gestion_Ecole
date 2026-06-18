@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import { Card } from '@/components/ui/Card';
@@ -77,7 +77,7 @@ export default function AdminDashboard() {
       if (classIds.length > 0) {
         studentsQuery = studentsQuery.in('class_id', classIds);
       } else if (selectedYearId) {
-        studentsQuery = studentsQuery.eq('id', '__none__');
+        studentsQuery = studentsQuery.eq('id', '00000000-0000-0000-0000-000000000000');
       }
 
       const { data: studentRows, error: studentsError } = await studentsQuery;
@@ -117,7 +117,7 @@ export default function AdminDashboard() {
       if (studentIds.length > 0) {
         todayAttendanceQuery = todayAttendanceQuery.in('student_id', studentIds);
       } else if (selectedYearId) {
-        todayAttendanceQuery = todayAttendanceQuery.eq('id', '__none__');
+        todayAttendanceQuery = todayAttendanceQuery.eq('id', '00000000-0000-0000-0000-000000000000');
       }
 
       const { data: todayAttendance, error: attendanceError } = await todayAttendanceQuery;
@@ -144,7 +144,7 @@ export default function AdminDashboard() {
       if (studentIds.length > 0) {
         absencesQuery = absencesQuery.in('student_id', studentIds);
       } else if (selectedYearId) {
-        absencesQuery = absencesQuery.eq('id', '__none__');
+        absencesQuery = absencesQuery.eq('id', '00000000-0000-0000-0000-000000000000');
       }
 
       const { data: recentAbsences, error: absencesError } = await absencesQuery;
@@ -210,7 +210,7 @@ export default function AdminDashboard() {
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Tableau de Bord Administratif</h1>
         <p className="text-gray-600 mt-2">
-          Année scolaire: <span className="font-semibold">{stats.currentYear}</span>
+          AnnÃ©e scolaire: <span className="font-semibold">{stats.currentYear}</span>
         </p>
       </div>
 
@@ -219,7 +219,7 @@ export default function AdminDashboard() {
           <div className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 font-medium">Étudiants</p>
+                <p className="text-sm text-gray-600 font-medium">Ã‰tudiants</p>
                 <p className="text-3xl font-bold text-blue-900 mt-1">{stats.totalStudents}</p>
               </div>
               <Icons.Users className="w-12 h-12 text-blue-300" />
@@ -255,7 +255,7 @@ export default function AdminDashboard() {
           <div className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 font-medium">Taux Présence (Auj.)</p>
+                <p className="text-sm text-gray-600 font-medium">Taux PrÃ©sence (Auj.)</p>
                 <p className="text-3xl font-bold text-orange-900 mt-1">{stats.attendanceToday.rate}%</p>
               </div>
               <Icons.CheckCircle className="w-12 h-12 text-orange-300" />
@@ -272,7 +272,7 @@ export default function AdminDashboard() {
                 <Icons.CheckCircle className="w-6 h-6 text-green-600" />
               </div>
               <div>
-                <p className="text-sm text-gray-600">Présents (Aujourd'hui)</p>
+                <p className="text-sm text-gray-600">PrÃ©sents (Aujourd'hui)</p>
                 <p className="text-2xl font-bold text-green-600">{stats.attendanceToday.present}</p>
               </div>
             </div>
@@ -312,13 +312,13 @@ export default function AdminDashboard() {
         <div className="p-6 space-y-4">
           <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">Absences Récentes</h2>
+              <h2 className="text-lg font-semibold text-gray-900">Absences RÃ©centes</h2>
               <p className="text-sm text-gray-600">Filtre et tri sur la liste des absences/retards.</p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 w-full lg:w-auto">
               <input
                 className="rounded-md border border-gray-200 bg-white px-3 py-2 text-sm focus:border-blue-400 focus:outline-none"
-                placeholder="Rechercher un élève"
+                placeholder="Rechercher un Ã©lÃ¨ve"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -336,33 +336,33 @@ export default function AdminDashboard() {
                 value={sessionFilter}
                 onChange={(e) => setSessionFilter(e.target.value as typeof sessionFilter)}
               >
-                <option value="ALL">Toutes les séances</option>
+                <option value="ALL">Toutes les sÃ©ances</option>
                 <option value="MORNING">Matin</option>
-                <option value="AFTERNOON">Après-midi</option>
+                <option value="AFTERNOON">AprÃ¨s-midi</option>
               </select>
               <select
                 className="rounded-md border border-gray-200 bg-white px-3 py-2 text-sm focus:border-blue-400 focus:outline-none"
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
               >
-                <option value="DATE_DESC">Plus récents</option>
+                <option value="DATE_DESC">Plus rÃ©cents</option>
                 <option value="DATE_ASC">Plus anciens</option>
-                <option value="NAME_ASC">Nom A → Z</option>
-                <option value="NAME_DESC">Nom Z → A</option>
+                <option value="NAME_ASC">Nom A â†’ Z</option>
+                <option value="NAME_DESC">Nom Z â†’ A</option>
               </select>
             </div>
           </div>
 
           {filteredAbsences.length === 0 ? (
-            <p className="text-gray-600 text-sm">Aucune absence enregistrée récemment.</p>
+            <p className="text-gray-600 text-sm">Aucune absence enregistrÃ©e rÃ©cemment.</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
-                    <th className="text-left px-4 py-2 font-semibold text-gray-700">Étudiant</th>
+                    <th className="text-left px-4 py-2 font-semibold text-gray-700">Ã‰tudiant</th>
                     <th className="text-left px-4 py-2 font-semibold text-gray-700">Date</th>
-                    <th className="text-left px-4 py-2 font-semibold text-gray-700">Séance</th>
+                    <th className="text-left px-4 py-2 font-semibold text-gray-700">SÃ©ance</th>
                     <th className="text-left px-4 py-2 font-semibold text-gray-700">Statut</th>
                   </tr>
                 </thead>
@@ -373,7 +373,7 @@ export default function AdminDashboard() {
                       <td className="px-4 py-2">{new Date(absence.date).toLocaleDateString('fr-FR')}</td>
                       <td className="px-4 py-2">
                         <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800">
-                          {absence.session === 'MORNING' ? 'Matin' : 'Après-midi'}
+                          {absence.session === 'MORNING' ? 'Matin' : 'AprÃ¨s-midi'}
                         </span>
                       </td>
                       <td className="px-4 py-2">
@@ -398,3 +398,4 @@ export default function AdminDashboard() {
     </div>
   );
 }
+

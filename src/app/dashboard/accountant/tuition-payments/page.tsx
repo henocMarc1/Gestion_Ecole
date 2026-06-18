@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
@@ -58,15 +58,15 @@ interface StudentPaymentStatus {
 }
 
 const PAYMENT_METHODS = [
-  { value: 'CASH', label: 'Espèces' },
+  { value: 'CASH', label: 'EspÃ¨ces' },
   { value: 'BANK_TRANSFER', label: 'Virement bancaire' },
-  { value: 'CHECK', label: 'Chèque' },
+  { value: 'CHECK', label: 'ChÃ¨que' },
   { value: 'MOBILE_MONEY', label: 'Mobile Money' },
 ];
 
 const MONTHS = [
-  'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-  'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
+  'Janvier', 'FÃ©vrier', 'Mars', 'Avril', 'Mai', 'Juin',
+  'Juillet', 'AoÃ»t', 'Septembre', 'Octobre', 'Novembre', 'DÃ©cembre'
 ];
 
 export default function TuitionPaymentsPage() {
@@ -117,7 +117,7 @@ export default function TuitionPaymentsPage() {
         classIds = (classesData || []).map((c) => c.id);
       }
 
-      // Récupérer tous les élèves avec leurs classes
+      // RÃ©cupÃ©rer tous les Ã©lÃ¨ves avec leurs classes
       let studentsQuery = supabase
         .from('students')
         .select('id, first_name, last_name, matricule, class_id, classes(name)')
@@ -129,7 +129,7 @@ export default function TuitionPaymentsPage() {
         if (classIds.length > 0) {
           studentsQuery = studentsQuery.in('class_id', classIds);
         } else {
-          studentsQuery = studentsQuery.eq('id', '__none__');
+          studentsQuery = studentsQuery.eq('id', '00000000-0000-0000-0000-000000000000');
         }
       }
 
@@ -137,12 +137,12 @@ export default function TuitionPaymentsPage() {
 
       if (studentsError) throw studentsError;
 
-      // Pour chaque élève, récupérer frais, échéanciers et paiements
+      // Pour chaque Ã©lÃ¨ve, rÃ©cupÃ©rer frais, Ã©chÃ©anciers et paiements
       const studentsWithPayments: StudentPaymentStatus[] = await Promise.all(
         (studentsData || []).map(async (student: any) => {
           if (!student.class_id) {
             return {
-              student: { ...student, class: student.classes || { name: 'Non assigné' } },
+              student: { ...student, class: student.classes || { name: 'Non assignÃ©' } },
               tuitionFee: null,
               paymentSchedules: [],
               payments: [],
@@ -152,7 +152,7 @@ export default function TuitionPaymentsPage() {
             };
           }
 
-          // Récupérer les frais de scolarité
+          // RÃ©cupÃ©rer les frais de scolaritÃ©
           let feeQuery = supabase
             .from('tuition_fees')
             .select('*')
@@ -177,7 +177,7 @@ export default function TuitionPaymentsPage() {
             schedules = schedulesData || [];
           }
 
-          // Récupérer les paiements de cet élève
+          // RÃ©cupÃ©rer les paiements de cet Ã©lÃ¨ve
           const { data: paymentsData } = await supabase
             .from('tuition_payments')
             .select('*')
@@ -191,7 +191,7 @@ export default function TuitionPaymentsPage() {
           const balance = totalDue - totalPaid;
 
           return {
-            student: { ...student, class: student.classes || { name: 'Non assigné' } },
+            student: { ...student, class: student.classes || { name: 'Non assignÃ©' } },
             tuitionFee: feeData,
             paymentSchedules: schedules,
             payments,
@@ -227,12 +227,12 @@ export default function TuitionPaymentsPage() {
       const status = getScheduleStatus(s);
       const matchesStatus = (() => {
         if (statusFilter === 'all') return true;
-        if (statusFilter === 'solde') return status.text === 'Soldé';
+        if (statusFilter === 'solde') return status.text === 'SoldÃ©';
         if (statusFilter === 'retard') return status.text.startsWith('Retard');
         if (statusFilter === 'echeance10') return status.color.includes('yellow');
         if (statusFilter === 'avenir') return status.color.includes('blue');
         if (statusFilter === 'partiel') return status.text === 'Partiel';
-        if (statusFilter === 'impaye') return status.text === 'Impayé';
+        if (statusFilter === 'impaye') return status.text === 'ImpayÃ©';
         if (statusFilter === 'aucun') return status.text === 'Aucun frais';
         return true;
       })();
@@ -262,12 +262,12 @@ export default function TuitionPaymentsPage() {
 
     const amount = parseFloat(paymentForm.amount);
     if (amount <= 0) {
-      toast.error('Le montant doit être supérieur à 0');
+      toast.error('Le montant doit Ãªtre supÃ©rieur Ã  0');
       return;
     }
 
     if (amount > selectedStudent.balance) {
-      toast.error('Le montant dépasse le solde restant');
+      toast.error('Le montant dÃ©passe le solde restant');
       return;
     }
 
@@ -304,11 +304,11 @@ export default function TuitionPaymentsPage() {
             parentIds
           );
         } catch (notifError) {
-          console.warn('Avertissement - Notification non créée:', notifError);
+          console.warn('Avertissement - Notification non crÃ©Ã©e:', notifError);
         }
       }
 
-      toast.success('Paiement enregistré avec succès');
+      toast.success('Paiement enregistrÃ© avec succÃ¨s');
       setShowPaymentModal(false);
       loadStudentsWithPayments();
     } catch (error: any) {
@@ -344,7 +344,7 @@ export default function TuitionPaymentsPage() {
     }
 
     if (studentStatus.balance === 0) {
-      return { color: 'bg-green-100 text-green-800', text: 'Soldé' };
+      return { color: 'bg-green-100 text-green-800', text: 'SoldÃ©' };
     }
 
     const schedules = [...studentStatus.paymentSchedules].sort(
@@ -354,7 +354,7 @@ export default function TuitionPaymentsPage() {
     if (schedules.length === 0) {
       return studentStatus.totalPaid > 0
         ? { color: 'bg-yellow-100 text-yellow-800', text: 'Partiel' }
-        : { color: 'bg-red-100 text-red-800', text: 'Impayé' };
+        : { color: 'bg-red-100 text-red-800', text: 'ImpayÃ©' };
     }
 
     let remainingPaid = studentStatus.totalPaid;
@@ -387,10 +387,10 @@ export default function TuitionPaymentsPage() {
     }
 
     if (deltaDays <= 10) {
-      return { color: 'bg-yellow-100 text-yellow-800', text: `Échéance dans ${deltaDays} j` };
+      return { color: 'bg-yellow-100 text-yellow-800', text: `Ã‰chÃ©ance dans ${deltaDays} j` };
     }
 
-    return { color: 'bg-blue-100 text-blue-800', text: `Échéance dans ${deltaDays} j` };
+    return { color: 'bg-blue-100 text-blue-800', text: `Ã‰chÃ©ance dans ${deltaDays} j` };
   };
 
   if (isLoading) {
@@ -407,10 +407,10 @@ export default function TuitionPaymentsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Paiements des frais de scolarité</h1>
+        <h1 className="text-3xl font-bold text-gray-900">Paiements des frais de scolaritÃ©</h1>
         <p className="text-gray-600 mt-2">
-          Enregistrer et suivre les paiements des élèves
-          {selectedYear?.name ? ` - Année: ${selectedYear.name}` : ''}
+          Enregistrer et suivre les paiements des Ã©lÃ¨ves
+          {selectedYear?.name ? ` - AnnÃ©e: ${selectedYear.name}` : ''}
         </p>
       </div>
 
@@ -423,7 +423,7 @@ export default function TuitionPaymentsPage() {
           </p>
         </Card>
         <Card className="border border-gray-200 p-4">
-          <p className="text-xs text-gray-600 mb-1">Total encaissé</p>
+          <p className="text-xs text-gray-600 mb-1">Total encaissÃ©</p>
           <p className="text-2xl font-bold text-green-600">
             {formatCurrency(students.reduce((sum, s) => sum + s.totalPaid, 0))}
           </p>
@@ -435,7 +435,7 @@ export default function TuitionPaymentsPage() {
           </p>
         </Card>
         <Card className="border border-gray-200 p-4">
-          <p className="text-xs text-gray-600 mb-1">Élèves soldés</p>
+          <p className="text-xs text-gray-600 mb-1">Ã‰lÃ¨ves soldÃ©s</p>
           <p className="text-2xl font-bold text-primary-600">
             {students.filter((s) => s.balance === 0 && s.totalDue > 0).length} / {students.length}
           </p>
@@ -448,7 +448,7 @@ export default function TuitionPaymentsPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
-            placeholder="Rechercher un élève par nom ou matricule..."
+            placeholder="Rechercher un Ã©lÃ¨ve par nom ou matricule..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-600"
@@ -469,35 +469,35 @@ export default function TuitionPaymentsPage() {
             </select>
           </div>
           <div>
-            <label className="text-xs text-gray-600 mb-1 block">Statut d'échéance</label>
+            <label className="text-xs text-gray-600 mb-1 block">Statut d'Ã©chÃ©ance</label>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-600"
             >
               <option value="all">Tous les statuts</option>
-              <option value="echeance10">Échéance ≤ 10 jours</option>
+              <option value="echeance10">Ã‰chÃ©ance â‰¤ 10 jours</option>
               <option value="retard">En retard</option>
-              <option value="avenir">Échéance future</option>
-              <option value="solde">Soldé</option>
+              <option value="avenir">Ã‰chÃ©ance future</option>
+              <option value="solde">SoldÃ©</option>
               <option value="partiel">Partiel</option>
-              <option value="impaye">Impayé</option>
+              <option value="impaye">ImpayÃ©</option>
               <option value="aucun">Aucun frais</option>
             </select>
           </div>
         </div>
       </Card>
 
-      {/* Liste des élèves */}
+      {/* Liste des Ã©lÃ¨ves */}
       <Card className="border border-gray-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[900px]">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-600">Élève</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-600">Ã‰lÃ¨ve</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-600">Classe</th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-gray-600">Total dû</th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-gray-600">Payé</th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-gray-600">Total dÃ»</th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-gray-600">PayÃ©</th>
                 <th className="px-4 py-3 text-right text-xs font-medium text-gray-600">Reste</th>
                 <th className="px-4 py-3 text-center text-xs font-medium text-gray-600">Statut</th>
                 <th className="px-4 py-3 text-right text-xs font-medium text-gray-600">Actions</th>
@@ -507,7 +507,7 @@ export default function TuitionPaymentsPage() {
               {filteredStudents.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
-                    Aucun élève trouvé
+                    Aucun Ã©lÃ¨ve trouvÃ©
                   </td>
                 </tr>
               ) : (
@@ -560,7 +560,7 @@ export default function TuitionPaymentsPage() {
                         <button
                           onClick={() => setSelectedStudent(studentStatus)}
                           className="text-gray-600 hover:text-gray-700 p-2 hover:bg-gray-50 rounded"
-                          title="Voir les détails"
+                          title="Voir les dÃ©tails"
                         >
                           <Icons.Eye className="w-4 h-4" />
                         </button>
@@ -588,7 +588,7 @@ export default function TuitionPaymentsPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="bg-gray-50 p-4 rounded-lg">
-                <p className="text-sm text-gray-600">Élève</p>
+                <p className="text-sm text-gray-600">Ã‰lÃ¨ve</p>
                 <p className="font-semibold text-gray-900">
                   {selectedStudent.student.first_name} {selectedStudent.student.last_name}
                 </p>
@@ -598,7 +598,7 @@ export default function TuitionPaymentsPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Montant payé (FCFA) *
+                  Montant payÃ© (FCFA) *
                 </label>
                 <Input
                   type="number"
@@ -627,7 +627,7 @@ export default function TuitionPaymentsPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Référence (N° reçu, chèque...)
+                  RÃ©fÃ©rence (NÂ° reÃ§u, chÃ¨que...)
                 </label>
                 <Input
                   type="text"
@@ -640,7 +640,7 @@ export default function TuitionPaymentsPage() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
                 <textarea
-                  placeholder="Notes supplémentaires..."
+                  placeholder="Notes supplÃ©mentaires..."
                   value={paymentForm.notes}
                   onChange={(e) => setPaymentForm({ ...paymentForm, notes: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-600"
@@ -670,20 +670,20 @@ export default function TuitionPaymentsPage() {
         </div>
       )}
 
-      {/* Modal détails élève */}
+      {/* Modal dÃ©tails Ã©lÃ¨ve */}
       {selectedStudent && !showPaymentModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <Card className="w-full max-w-3xl max-h-[90vh] overflow-y-auto">
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
-                <span>Détails des paiements</span>
+                <span>DÃ©tails des paiements</span>
                 <button onClick={() => setSelectedStudent(null)} className="text-gray-400 hover:text-gray-600">
                   <X className="w-5 h-5" />
                 </button>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Info élève */}
+              {/* Info Ã©lÃ¨ve */}
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h3 className="font-semibold text-gray-900 mb-2">
                   {selectedStudent.student.first_name} {selectedStudent.student.last_name}
@@ -692,14 +692,14 @@ export default function TuitionPaymentsPage() {
                 <p className="text-sm text-gray-600">Classe: {selectedStudent.student.class.name}</p>
               </div>
 
-              {/* Résumé financier */}
+              {/* RÃ©sumÃ© financier */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="bg-gray-100 p-4 rounded-lg">
-                  <p className="text-xs text-gray-600 mb-1">Total dû</p>
+                  <p className="text-xs text-gray-600 mb-1">Total dÃ»</p>
                   <p className="text-lg font-bold text-gray-900">{formatCurrency(selectedStudent.totalDue)}</p>
                 </div>
                 <div className="bg-green-50 p-4 rounded-lg">
-                  <p className="text-xs text-green-600 mb-1">Payé</p>
+                  <p className="text-xs text-green-600 mb-1">PayÃ©</p>
                   <p className="text-lg font-bold text-green-600">{formatCurrency(selectedStudent.totalPaid)}</p>
                 </div>
                 <div className="bg-red-50 p-4 rounded-lg">
@@ -712,7 +712,7 @@ export default function TuitionPaymentsPage() {
               <div>
                 <h4 className="font-semibold text-gray-900 mb-3">Historique des paiements</h4>
                 {selectedStudent.payments.length === 0 ? (
-                  <p className="text-center text-gray-500 py-4">Aucun paiement enregistré</p>
+                  <p className="text-center text-gray-500 py-4">Aucun paiement enregistrÃ©</p>
                 ) : (
                   <div className="space-y-2">
                     {selectedStudent.payments.map((payment) => (
@@ -720,10 +720,10 @@ export default function TuitionPaymentsPage() {
                         <div className="flex-1">
                           <p className="font-medium text-gray-900">{formatCurrency(payment.amount)}</p>
                           <p className="text-xs text-gray-600">
-                            {new Date(payment.payment_date).toLocaleDateString('fr-FR')} • {PAYMENT_METHODS.find(m => m.value === payment.payment_method)?.label}
+                            {new Date(payment.payment_date).toLocaleDateString('fr-FR')} â€¢ {PAYMENT_METHODS.find(m => m.value === payment.payment_method)?.label}
                           </p>
                           {payment.reference && (
-                            <p className="text-xs text-gray-500">Réf: {payment.reference}</p>
+                            <p className="text-xs text-gray-500">RÃ©f: {payment.reference}</p>
                           )}
                         </div>
                         <Check className="w-5 h-5 text-green-600" />
@@ -743,3 +743,4 @@ export default function TuitionPaymentsPage() {
     </div>
   );
 }
+

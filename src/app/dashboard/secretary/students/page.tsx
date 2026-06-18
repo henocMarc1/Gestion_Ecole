@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/Card';
@@ -46,7 +46,7 @@ export default function StudentsSPage() {
   const [isUpdatingClass, setIsUpdatingClass] = useState(false);
   const [newClassId, setNewClassId] = useState('');
 
-  // Subscription en temps réel pour les classes
+  // Subscription en temps rÃ©el pour les classes
   useRealtimeSubscription({
     table: 'classes',
     filter: user?.school_id ? `school_id=eq.${user.school_id}` : undefined,
@@ -94,7 +94,7 @@ export default function StudentsSPage() {
         if (classIds.length > 0) {
           studentsQuery = studentsQuery.in('class_id', classIds);
         } else {
-          studentsQuery = studentsQuery.eq('id', '__none__');
+          studentsQuery = studentsQuery.eq('id', '00000000-0000-0000-0000-000000000000');
         }
       }
 
@@ -120,7 +120,7 @@ export default function StudentsSPage() {
     setNewClassId(student.class_id || '');
     setIsDetailsModalOpen(true);
     
-    // Charger les parents de l'élève
+    // Charger les parents de l'Ã©lÃ¨ve
     setIsLoadingParents(true);
     try {
       const { data, error } = await supabase
@@ -137,7 +137,7 @@ export default function StudentsSPage() {
       setIsLoadingParents(false);
     }
 
-    // Charger les paiements de l'élève (montant cumulé et dernier paiement)
+    // Charger les paiements de l'Ã©lÃ¨ve (montant cumulÃ© et dernier paiement)
     setIsLoadingPayments(true);
     try {
       const { data, error } = await supabase
@@ -159,7 +159,7 @@ export default function StudentsSPage() {
         lastPaymentDate,
       });
     } catch (error) {
-      console.warn('Paiements non disponibles pour cet élève', error);
+      console.warn('Paiements non disponibles pour cet Ã©lÃ¨ve', error);
       setPaymentSummary({ totalPaid: 0, count: 0, lastPaymentDate: null });
     } finally {
       setIsLoadingPayments(false);
@@ -168,7 +168,7 @@ export default function StudentsSPage() {
 
   const handleUpdateClass = async () => {
     if (!selectedStudent || !newClassId) {
-      toast.error('Veuillez sélectionner une classe');
+      toast.error('Veuillez sÃ©lectionner une classe');
       return;
     }
 
@@ -181,11 +181,11 @@ export default function StudentsSPage() {
 
       if (error) throw error;
       
-      toast.success('Classe mise à jour avec succès');
+      toast.success('Classe mise Ã  jour avec succÃ¨s');
       setIsDetailsModalOpen(false);
       loadStudents();
     } catch (error) {
-      toast.error('Erreur lors de la mise à jour');
+      toast.error('Erreur lors de la mise Ã  jour');
       console.error(error);
     } finally {
       setIsUpdatingClass(false);
@@ -207,19 +207,19 @@ export default function StudentsSPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-semibold text-neutral-900">Gestion des élèves</h1>
+        <h1 className="text-3xl font-semibold text-neutral-900">Gestion des Ã©lÃ¨ves</h1>
         <p className="text-sm text-neutral-600 mt-1">
-          Consultez la liste des élèves ({filteredStudents.length} au total)
+          Consultez la liste des Ã©lÃ¨ves ({filteredStudents.length} au total)
         </p>
       </div>
 
-      {/* Modal de détails */}
+      {/* Modal de dÃ©tails */}
       {isDetailsModalOpen && selectedStudent && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-semibold text-neutral-900">Détails de l'élève</h2>
+                <h2 className="text-xl font-semibold text-neutral-900">DÃ©tails de l'Ã©lÃ¨ve</h2>
                 <button
                   onClick={() => setIsDetailsModalOpen(false)}
                   className="text-neutral-400 hover:text-neutral-600"
@@ -229,11 +229,11 @@ export default function StudentsSPage() {
               </div>
 
               <div className="space-y-6">
-                {/* Informations générales */}
+                {/* Informations gÃ©nÃ©rales */}
                 <div>
                   <h3 className="text-sm font-medium text-neutral-700 mb-4 flex items-center gap-2">
                     <Icons.Student className="w-4 h-4" />
-                    Informations générales
+                    Informations gÃ©nÃ©rales
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-neutral-50 p-4 rounded-lg">
                     <div>
@@ -257,7 +257,7 @@ export default function StudentsSPage() {
                     <div>
                       <p className="text-xs text-neutral-500">Genre</p>
                       <p className="text-sm text-neutral-900">
-                        {selectedStudent.gender === 'M' ? 'Masculin' : 'Féminin'}
+                        {selectedStudent.gender === 'M' ? 'Masculin' : 'FÃ©minin'}
                       </p>
                     </div>
                     <div>
@@ -267,7 +267,7 @@ export default function StudentsSPage() {
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs text-neutral-500">Téléphone</p>
+                      <p className="text-xs text-neutral-500">TÃ©lÃ©phone</p>
                       <p className="text-sm text-neutral-900">
                         {selectedStudent.phone || '-'}
                       </p>
@@ -281,7 +281,7 @@ export default function StudentsSPage() {
                     <div>
                       <p className="text-xs text-neutral-500">Classe actuelle</p>
                       <p className="text-sm font-medium text-neutral-900">
-                        {selectedStudent.class?.name || 'Non assigné'}
+                        {selectedStudent.class?.name || 'Non assignÃ©'}
                       </p>
                     </div>
                   </div>
@@ -299,7 +299,7 @@ export default function StudentsSPage() {
                     </div>
                   ) : studentParents.length === 0 ? (
                     <div className="bg-neutral-50 p-4 rounded-lg text-center">
-                      <p className="text-sm text-neutral-600">Aucun parent enregistré</p>
+                      <p className="text-sm text-neutral-600">Aucun parent enregistrÃ©</p>
                     </div>
                   ) : (
                     <div className="space-y-3">
@@ -328,7 +328,7 @@ export default function StudentsSPage() {
                               </p>
                             </div>
                             <div>
-                              <p className="text-xs text-neutral-500">Téléphone</p>
+                              <p className="text-xs text-neutral-500">TÃ©lÃ©phone</p>
                               <p className="text-sm text-neutral-900">
                                 {parent.users?.phone || '-'}
                               </p>
@@ -352,12 +352,12 @@ export default function StudentsSPage() {
                     </div>
                   ) : paymentSummary.count === 0 ? (
                     <div className="bg-neutral-50 p-4 rounded-lg text-center">
-                      <p className="text-sm text-neutral-600">Aucun paiement enregistré</p>
+                      <p className="text-sm text-neutral-600">Aucun paiement enregistrÃ©</p>
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 bg-neutral-50 p-4 rounded-lg border border-neutral-200">
                       <div>
-                        <p className="text-xs text-neutral-500">Montant total versé</p>
+                        <p className="text-xs text-neutral-500">Montant total versÃ©</p>
                         <p className="text-lg font-semibold text-neutral-900">{paymentSummary.totalPaid.toLocaleString('fr-FR')} F</p>
                       </div>
                       <div>
@@ -380,12 +380,12 @@ export default function StudentsSPage() {
                 <div>
                   <h3 className="text-sm font-medium text-neutral-700 mb-4 flex items-center gap-2">
                     <Icons.BookOpen className="w-4 h-4" />
-                    Assigner à une classe
+                    Assigner Ã  une classe
                   </h3>
                   <div className="bg-primary-50 border border-primary-200 p-4 rounded-lg space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-neutral-700 mb-2">
-                        Sélectionner une nouvelle classe
+                        SÃ©lectionner une nouvelle classe
                       </label>
                       <select
                         value={newClassId}
@@ -405,11 +405,11 @@ export default function StudentsSPage() {
                       disabled={isUpdatingClass || newClassId === selectedStudent.class_id}
                       className="w-full"
                     >
-                      {isUpdatingClass ? 'Mise à jour...' : 'Mettre à jour la classe'}
+                      {isUpdatingClass ? 'Mise Ã  jour...' : 'Mettre Ã  jour la classe'}
                     </Button>
                     {newClassId === selectedStudent.class_id && (
                       <p className="text-xs text-neutral-600 text-center">
-                        L'élève est déjà dans cette classe
+                        L'Ã©lÃ¨ve est dÃ©jÃ  dans cette classe
                       </p>
                     )}
                   </div>
@@ -437,7 +437,7 @@ export default function StudentsSPage() {
           <Icons.Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
           <input
             type="text"
-            placeholder="Rechercher par nom, prénom ou email..."
+            placeholder="Rechercher par nom, prÃ©nom ou email..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500"
@@ -453,7 +453,7 @@ export default function StudentsSPage() {
       ) : filteredStudents.length === 0 ? (
         <Card className="p-12 text-center border border-dashed border-neutral-300">
           <Icons.Student className="w-12 h-12 text-neutral-400 mx-auto mb-3" />
-          <h3 className="text-lg font-medium text-neutral-900 mb-1">Aucun élève</h3>
+          <h3 className="text-lg font-medium text-neutral-900 mb-1">Aucun Ã©lÃ¨ve</h3>
         </Card>
       ) : (
         <Card className="border border-neutral-200 shadow-sm overflow-hidden">
@@ -465,7 +465,7 @@ export default function StudentsSPage() {
                   <th className="px-4 py-3 text-left text-xs font-medium text-neutral-600">Nom complet</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-neutral-600">Email</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-neutral-600">Classe</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-neutral-600">Téléphone</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-neutral-600">TÃ©lÃ©phone</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-neutral-600">Inscrit le</th>
                   <th className="px-4 py-3 text-right text-xs font-medium text-neutral-600">Actions</th>
                 </tr>
@@ -493,14 +493,14 @@ export default function StudentsSPage() {
                       <button
                         onClick={() => {
                           if (!canViewDetails) {
-                            toast.error('Accès restreint aux rôles: secrétaire, admin, comptable');
+                            toast.error('AccÃ¨s restreint aux rÃ´les: secrÃ©taire, admin, comptable');
                             return;
                           }
                           handleViewDetails(student);
                         }}
                         className="text-primary-600 hover:text-primary-700 p-2 hover:bg-primary-50 rounded disabled:opacity-50"
                         disabled={!canViewDetails}
-                        title={canViewDetails ? 'Voir les détails' : 'Accès restreint'}
+                        title={canViewDetails ? 'Voir les dÃ©tails' : 'AccÃ¨s restreint'}
                       >
                         <Icons.Eye className="w-4 h-4" />
                       </button>
@@ -515,3 +515,4 @@ export default function StudentsSPage() {
     </div>
   );
 }
+

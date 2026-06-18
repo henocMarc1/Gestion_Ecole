@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
@@ -71,7 +71,7 @@ export default function AdminTuitionReportsPage() {
   const [exportType, setExportType] = useState<'pdf' | 'csv'>('pdf');
   const [selectedExportData, setSelectedExportData] = useState<'global' | 'classes' | 'students'>('global');
 
-  // Subscription en temps réel pour les classes
+  // Subscription en temps rÃ©el pour les classes
   useRealtimeSubscription({
     table: 'classes',
     filter: user?.school_id ? `school_id=eq.${user.school_id}` : undefined,
@@ -95,7 +95,7 @@ export default function AdminTuitionReportsPage() {
 
     setIsLoading(true);
     try {
-      // Récupérer les classes
+      // RÃ©cupÃ©rer les classes
       let classesQuery = supabase
         .from('classes')
         .select('id, name')
@@ -111,7 +111,7 @@ export default function AdminTuitionReportsPage() {
 
       setClasses(classesData || []);
 
-      // Récupérer tous les élèves avec leurs infos
+      // RÃ©cupÃ©rer tous les Ã©lÃ¨ves avec leurs infos
       let studentsQuery = supabase
         .from('students')
         .select('id, first_name, last_name, matricule, class_id, classes(name)')
@@ -123,7 +123,7 @@ export default function AdminTuitionReportsPage() {
         if (classIds.length > 0) {
           studentsQuery = studentsQuery.in('class_id', classIds);
         } else {
-          studentsQuery = studentsQuery.eq('id', '__none__');
+          studentsQuery = studentsQuery.eq('id', '00000000-0000-0000-0000-000000000000');
         }
       }
 
@@ -134,7 +134,7 @@ export default function AdminTuitionReportsPage() {
         return;
       }
 
-      // Pour chaque élève, calculer les stats
+      // Pour chaque Ã©lÃ¨ve, calculer les stats
       const studentsWithStats: StudentDetail[] = await Promise.all(
         (studentsData || []).map(async (student: any) => {
           // Frais
@@ -166,8 +166,8 @@ export default function AdminTuitionReportsPage() {
           const balance = totalDue - totalPaid;
           const lastPayment = paymentsData?.[0]?.payment_date || null;
 
-          let paymentStatus = 'Impayé';
-          if (balance === 0 && totalDue > 0) paymentStatus = 'Soldé';
+          let paymentStatus = 'ImpayÃ©';
+          if (balance === 0 && totalDue > 0) paymentStatus = 'SoldÃ©';
           else if (totalPaid > 0 && balance > 0) paymentStatus = 'Partiel';
 
           return {
@@ -209,7 +209,7 @@ export default function AdminTuitionReportsPage() {
         classStats.totalPaid += student.totalPaid;
         classStats.totalBalance += student.balance;
 
-        if (student.paymentStatus === 'Soldé') {
+        if (student.paymentStatus === 'SoldÃ©') {
           classStats.paidCount++;
         }
       }
@@ -229,9 +229,9 @@ export default function AdminTuitionReportsPage() {
         totalDue,
         totalPaid,
         totalBalance,
-        studentsPaid: studentsWithStats.filter((s) => s.paymentStatus === 'Soldé').length,
+        studentsPaid: studentsWithStats.filter((s) => s.paymentStatus === 'SoldÃ©').length,
         studentsPartial: studentsWithStats.filter((s) => s.paymentStatus === 'Partiel').length,
-        studentsUnpaid: studentsWithStats.filter((s) => s.paymentStatus === 'Impayé').length,
+        studentsUnpaid: studentsWithStats.filter((s) => s.paymentStatus === 'ImpayÃ©').length,
         collectionRate: totalDue > 0 ? Math.round((totalPaid / totalDue) * 100) : 0,
         classStats,
       };
@@ -267,7 +267,7 @@ export default function AdminTuitionReportsPage() {
   const handleExportReportPDF = async (dataType: 'global' | 'classes' | 'students') => {
     if (!stats) return;
 
-    // Récupérer les infos de l'école
+    // RÃ©cupÃ©rer les infos de l'Ã©cole
     const { data: school } = await supabase
       .from('schools')
       .select('name, logo_url, address, phone')
@@ -279,17 +279,17 @@ export default function AdminTuitionReportsPage() {
     let rows: any[][] = [];
 
     if (dataType === 'global') {
-      title = 'Rapport de Collecte - Résumé Global';
-      headers = ['Métrique', 'Valeur'];
+      title = 'Rapport de Collecte - RÃ©sumÃ© Global';
+      headers = ['MÃ©trique', 'Valeur'];
       rows = [
         ['Total attendu', `${Math.round(stats.totalDue)} F CFA`],
-        ['Total encaissé', `${Math.round(stats.totalPaid)} F CFA`],
+        ['Total encaissÃ©', `${Math.round(stats.totalPaid)} F CFA`],
         ['Solde restant', `${Math.round(stats.totalBalance)} F CFA`],
         ['Taux de recouvrement', `${stats.collectionRate}%`],
       ];
     } else if (dataType === 'classes') {
       title = 'Rapport de Collecte - Par Classes';
-      headers = ['Classe', 'Élèves', 'Total dû', 'Total payé', 'Reste', '% Payé'];
+      headers = ['Classe', 'Ã‰lÃ¨ves', 'Total dÃ»', 'Total payÃ©', 'Reste', '% PayÃ©'];
       rows = stats.classStats.map(cs => [
         cs.className,
         String(cs.studentCount),
@@ -306,8 +306,8 @@ export default function AdminTuitionReportsPage() {
       const totalBalance = stats.classStats.reduce((sum, cs) => sum + cs.totalBalance, 0);
       rows.push(['TOTAL', String(totalEleves), `${Math.round(totalDue)} F CFA`, `${Math.round(totalPaid)} F CFA`, `${Math.round(totalBalance)} F CFA`, '']);
     } else {
-      title = 'Rapport de Collecte - Détail des Élèves';
-      headers = ['Nom', 'Matricule', 'Classe', 'Total dû', 'Payé', 'Reste', 'Statut'];
+      title = 'Rapport de Collecte - DÃ©tail des Ã‰lÃ¨ves';
+      headers = ['Nom', 'Matricule', 'Classe', 'Total dÃ»', 'PayÃ©', 'Reste', 'Statut'];
       rows = filteredStudents.map(s => [
         s.name,
         s.matricule,
@@ -339,7 +339,7 @@ export default function AdminTuitionReportsPage() {
       }
     );
 
-    toast.success('Rapport PDF exporté');
+    toast.success('Rapport PDF exportÃ©');
   };
 
   const handleExportReportCSV = async (dataType: 'global' | 'classes' | 'students') => {
@@ -350,19 +350,19 @@ export default function AdminTuitionReportsPage() {
 
     if (dataType === 'global') {
       data = [
-        { Métrique: 'Total attendu', Valeur: `${Math.round(stats.totalDue)} F CFA` },
-        { Métrique: 'Total encaissé', Valeur: `${Math.round(stats.totalPaid)} F CFA` },
-        { Métrique: 'Solde restant', Valeur: `${Math.round(stats.totalBalance)} F CFA` },
-        { Métrique: 'Taux de recouvrement', Valeur: `${stats.collectionRate}%` },
+        { MÃ©trique: 'Total attendu', Valeur: `${Math.round(stats.totalDue)} F CFA` },
+        { MÃ©trique: 'Total encaissÃ©', Valeur: `${Math.round(stats.totalPaid)} F CFA` },
+        { MÃ©trique: 'Solde restant', Valeur: `${Math.round(stats.totalBalance)} F CFA` },
+        { MÃ©trique: 'Taux de recouvrement', Valeur: `${stats.collectionRate}%` },
       ];
     } else if (dataType === 'classes') {
       data = stats.classStats.map(cs => ({
         Classe: cs.className,
-        Élèves: cs.studentCount,
-        'Total dû': `${Math.round(cs.totalDue)} F CFA`,
-        'Total payé': `${Math.round(cs.totalPaid)} F CFA`,
+        Ã‰lÃ¨ves: cs.studentCount,
+        'Total dÃ»': `${Math.round(cs.totalDue)} F CFA`,
+        'Total payÃ©': `${Math.round(cs.totalPaid)} F CFA`,
         Reste: `${Math.round(cs.totalBalance)} F CFA`,
-        '% Payé': `${cs.percentagePaid}%`,
+        '% PayÃ©': `${cs.percentagePaid}%`,
       }));
 
       // Ajouter la ligne de totaux
@@ -373,19 +373,19 @@ export default function AdminTuitionReportsPage() {
       
       data.push({
         Classe: 'TOTAL',
-        Élèves: totalEleves,
-        'Total dû': `${Math.round(totalDue)} F CFA`,
-        'Total payé': `${Math.round(totalPaid)} F CFA`,
+        Ã‰lÃ¨ves: totalEleves,
+        'Total dÃ»': `${Math.round(totalDue)} F CFA`,
+        'Total payÃ©': `${Math.round(totalPaid)} F CFA`,
         Reste: `${Math.round(totalBalance)} F CFA`,
-        '% Payé': '',
+        '% PayÃ©': '',
       });
     } else {
       data = filteredStudents.map(s => ({
         Nom: s.name,
         Matricule: s.matricule,
         Classe: s.className,
-        'Total dû': `${Math.round(s.totalDue)} F CFA`,
-        Payé: `${Math.round(s.totalPaid)} F CFA`,
+        'Total dÃ»': `${Math.round(s.totalDue)} F CFA`,
+        PayÃ©: `${Math.round(s.totalPaid)} F CFA`,
         Reste: `${Math.round(s.balance)} F CFA`,
         Statut: s.paymentStatus,
       }));
@@ -399,8 +399,8 @@ export default function AdminTuitionReportsPage() {
         Nom: 'TOTAL',
         Matricule: '',
         Classe: '',
-        'Total dû': `${Math.round(totalDue)} F CFA`,
-        Payé: `${Math.round(totalPaid)} F CFA`,
+        'Total dÃ»': `${Math.round(totalDue)} F CFA`,
+        PayÃ©: `${Math.round(totalPaid)} F CFA`,
         Reste: `${Math.round(totalBalance)} F CFA`,
         Statut: '',
       });
@@ -410,7 +410,7 @@ export default function AdminTuitionReportsPage() {
       data,
       `rapport-collecte-${dataType}-${new Date().toISOString().split('T')[0]}.xlsx`
     );
-    toast.success('Rapport Excel téléchargé');
+    toast.success('Rapport Excel tÃ©lÃ©chargÃ©');
   };
 
   const formatCurrency = (amount: number) => {
@@ -426,7 +426,7 @@ export default function AdminTuitionReportsPage() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <BarChart3 className="w-12 h-12 text-primary-600 mx-auto mb-4 animate-spin" />
-          <p className="text-gray-600">Génération du rapport...</p>
+          <p className="text-gray-600">GÃ©nÃ©ration du rapport...</p>
         </div>
       </div>
     );
@@ -438,8 +438,8 @@ export default function AdminTuitionReportsPage() {
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Rapports de collecte</h1>
           <p className="text-gray-600 mt-2">
-            Suivi global des paiements des frais de scolarité
-            {selectedYear?.name ? ` - Année: ${selectedYear.name}` : ''}
+            Suivi global des paiements des frais de scolaritÃ©
+            {selectedYear?.name ? ` - AnnÃ©e: ${selectedYear.name}` : ''}
           </p>
         </div>
         <div className="flex gap-2">
@@ -471,13 +471,13 @@ export default function AdminTuitionReportsPage() {
         <Card className="border border-gray-200 p-4">
           <p className="text-xs text-gray-600 mb-1">Total attendu</p>
           <p className="text-2xl font-bold text-gray-900">{formatCurrency(stats.totalDue)}</p>
-          <p className="text-xs text-gray-500 mt-2">{stats.totalStudents} élèves</p>
+          <p className="text-xs text-gray-500 mt-2">{stats.totalStudents} Ã©lÃ¨ves</p>
         </Card>
 
         <Card className="border border-gray-200 p-4">
-          <p className="text-xs text-gray-600 mb-1">Encaissé</p>
+          <p className="text-xs text-gray-600 mb-1">EncaissÃ©</p>
           <p className="text-2xl font-bold text-green-600">{formatCurrency(stats.totalPaid)}</p>
-          <p className="text-xs text-green-600 mt-2">{stats.studentsPaid} élèves soldés</p>
+          <p className="text-xs text-green-600 mt-2">{stats.studentsPaid} Ã©lÃ¨ves soldÃ©s</p>
         </Card>
 
         <Card className="border border-gray-200 p-4">
@@ -498,16 +498,16 @@ export default function AdminTuitionReportsPage() {
         </Card>
 
         <Card className="border border-gray-200 p-4">
-          <p className="text-xs text-gray-600 mb-1">État</p>
+          <p className="text-xs text-gray-600 mb-1">Ã‰tat</p>
           <div className="space-y-1 mt-2">
             <p className="text-xs">
-              <span className="font-semibold text-green-600">{stats.studentsPaid}</span> Soldés
+              <span className="font-semibold text-green-600">{stats.studentsPaid}</span> SoldÃ©s
             </p>
             <p className="text-xs">
               <span className="font-semibold text-yellow-600">{stats.studentsPartial}</span> Partiels
             </p>
             <p className="text-xs">
-              <span className="font-semibold text-red-600">{stats.studentsUnpaid}</span> Impayés
+              <span className="font-semibold text-red-600">{stats.studentsUnpaid}</span> ImpayÃ©s
             </p>
           </div>
         </Card>
@@ -544,7 +544,7 @@ export default function AdminTuitionReportsPage() {
                 : 'text-gray-600 hover:text-gray-900'
             }`}
           >
-            Par élève
+            Par Ã©lÃ¨ve
           </button>
         </div>
       </Card>
@@ -567,7 +567,7 @@ export default function AdminTuitionReportsPage() {
                       <div>
                         <p className="font-semibold text-gray-900">{cs.className}</p>
                         <p className="text-sm text-gray-600">
-                          {cs.paidCount} / {cs.studentCount} élèves soldés
+                          {cs.paidCount} / {cs.studentCount} Ã©lÃ¨ves soldÃ©s
                         </p>
                       </div>
                       <p className="text-lg font-bold text-primary-600">{cs.percentagePaid}%</p>
@@ -579,8 +579,8 @@ export default function AdminTuitionReportsPage() {
                       />
                     </div>
                     <div className="flex justify-between text-xs text-gray-600">
-                      <span>Dû: {formatCurrency(cs.totalDue)}</span>
-                      <span>Payé: {formatCurrency(cs.totalPaid)}</span>
+                      <span>DÃ»: {formatCurrency(cs.totalDue)}</span>
+                      <span>PayÃ©: {formatCurrency(cs.totalPaid)}</span>
                       <span>Reste: {formatCurrency(cs.totalBalance)}</span>
                     </div>
                   </div>
@@ -599,12 +599,12 @@ export default function AdminTuitionReportsPage() {
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-600">Classe</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-600">Élèves</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-600">Total dû</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-600">Encaissé</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-600">Ã‰lÃ¨ves</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-600">Total dÃ»</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-600">EncaissÃ©</th>
                   <th className="px-4 py-3 text-right text-xs font-medium text-gray-600">Reste</th>
                   <th className="px-4 py-3 text-right text-xs font-medium text-gray-600">% Collecte</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-600">Soldés</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-600">SoldÃ©s</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -653,14 +653,14 @@ export default function AdminTuitionReportsPage() {
         </Card>
       )}
 
-      {/* Par élève */}
+      {/* Par Ã©lÃ¨ve */}
       {viewType === 'students' && (
         <div className="space-y-4">
           <div className="flex gap-4">
             <div className="flex-1">
               <input
                 type="text"
-                placeholder="Rechercher un élève..."
+                placeholder="Rechercher un Ã©lÃ¨ve..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-600"
@@ -685,10 +685,10 @@ export default function AdminTuitionReportsPage() {
               <table className="w-full">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-600">Élève</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-600">Ã‰lÃ¨ve</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-600">Classe</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-600">Total dû</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-600">Payé</th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-600">Total dÃ»</th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-600">PayÃ©</th>
                     <th className="px-4 py-3 text-right text-xs font-medium text-gray-600">Reste</th>
                     <th className="px-4 py-3 text-center text-xs font-medium text-gray-600">Statut</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-600">Dernier paiement</th>
@@ -698,7 +698,7 @@ export default function AdminTuitionReportsPage() {
                   {filteredStudents.length === 0 ? (
                     <tr>
                       <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
-                        Aucun élève trouvé
+                        Aucun Ã©lÃ¨ve trouvÃ©
                       </td>
                     </tr>
                   ) : (
@@ -723,7 +723,7 @@ export default function AdminTuitionReportsPage() {
                         <td className="px-4 py-3 text-center">
                           <span
                             className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                              student.paymentStatus === 'Soldé'
+                              student.paymentStatus === 'SoldÃ©'
                                 ? 'bg-green-100 text-green-800'
                                 : student.paymentStatus === 'Partiel'
                                 ? 'bg-yellow-100 text-yellow-800'
@@ -767,7 +767,7 @@ export default function AdminTuitionReportsPage() {
                   className="w-4 h-4"
                 />
                 <span className="ml-3">
-                  <strong>Résumé global</strong>
+                  <strong>RÃ©sumÃ© global</strong>
                   <p className="text-sm text-gray-600">Statistiques globales de collecte</p>
                 </span>
               </label>
@@ -783,7 +783,7 @@ export default function AdminTuitionReportsPage() {
                 />
                 <span className="ml-3">
                   <strong>Par classes</strong>
-                  <p className="text-sm text-gray-600">Détail de la collecte par classe</p>
+                  <p className="text-sm text-gray-600">DÃ©tail de la collecte par classe</p>
                 </span>
               </label>
 
@@ -797,8 +797,8 @@ export default function AdminTuitionReportsPage() {
                   className="w-4 h-4"
                 />
                 <span className="ml-3">
-                  <strong>Détail des élèves</strong>
-                  <p className="text-sm text-gray-600">Paiements individuels de tous les élèves</p>
+                  <strong>DÃ©tail des Ã©lÃ¨ves</strong>
+                  <p className="text-sm text-gray-600">Paiements individuels de tous les Ã©lÃ¨ves</p>
                 </span>
               </label>
             </div>
@@ -830,3 +830,4 @@ export default function AdminTuitionReportsPage() {
     </div>
   );
 }
+
