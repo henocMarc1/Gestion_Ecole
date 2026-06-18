@@ -12,9 +12,11 @@ import { exportToPDFTable } from '@/utils/exportUtils';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { toast } from 'sonner';
+import { useSchoolYear } from '@/context/SchoolYearContext';
 
 export default function ParentDashboard() {
   const { user } = useAuth();
+  const { selectedYearId, selectedYear } = useSchoolYear();
   const router = useRouter();
   const [children, setChildren] = useState<any[]>([]);
   const [recentPayments, setRecentPayments] = useState<any[]>([]);
@@ -32,7 +34,7 @@ export default function ParentDashboard() {
   useEffect(() => {
     checkPasswordChange();
     loadDashboardData();
-  }, [user, selectedChild]);
+  }, [user, selectedChild, selectedYearId, selectedYear?.start_date, selectedYear?.end_date]);
 
   // Abonnement aux changements des enfants du parent
   useRealtimeSubscription({
@@ -137,16 +139,25 @@ export default function ParentDashboard() {
             class:classes (
               id,
               name,
-              level
+              level,
+              year_id
             )
           )
         `)
         .eq('parent_id', user.id);
 
       if (childrenData) {
-        setChildren(childrenData.map(ps => ps.student));
+        const yearFilteredChildren = selectedYearId
+          ? childrenData.filter((ps: any) => ps.student?.class?.year_id === selectedYearId)
+          : childrenData;
 
-        const studentIds = childrenData.map(ps => ps.student_id);
+        setChildren(yearFilteredChildren.map((ps: any) => ps.student));
+
+        const studentIds = yearFilteredChildren.map((ps: any) => ps.student_id);
+
+        if (selectedChild && !studentIds.includes(selectedChild)) {
+          setSelectedChild(null);
+        }
 
         // Définir le premier enfant par défaut
         if (!selectedChild && studentIds.length > 0) {
@@ -159,6 +170,8 @@ export default function ParentDashboard() {
             .from('attendance')
             .select('*, students(first_name, last_name)')
             .eq('student_id', selectedChild)
+            .gte('date', selectedYear?.start_date || '1900-01-01')
+            .lte('date', selectedYear?.end_date || '2999-12-31')
             .order('date', { ascending: false })
             .limit(30);
 
@@ -173,6 +186,8 @@ export default function ParentDashboard() {
           .select('*')
           .in('student_id', studentIds)
           .in('status', ['SENT', 'OVERDUE'])
+          .gte('due_date', selectedYear?.start_date || '1900-01-01')
+          .lte('due_date', selectedYear?.end_date || '2999-12-31')
           .order('due_date', { ascending: true })
           .limit(5);
 
@@ -191,6 +206,8 @@ export default function ParentDashboard() {
           `)
           .in('student_id', studentIds)
           .eq('status', 'COMPLETED')
+          .gte('payment_date', selectedYear?.start_date || '1900-01-01')
+          .lte('payment_date', selectedYear?.end_date || '2999-12-31')
           .order('payment_date', { ascending: false })
           .limit(5);
 
@@ -305,7 +322,10 @@ export default function ParentDashboard() {
             <div className="space-y-2">
               <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-rose-100 text-rose-700">Parent</span>
               <h1 className="text-3xl font-semibold text-neutral-900">Bonjour, {user?.full_name}</h1>
-              <p className="text-sm text-neutral-600 max-w-2xl">Suivez la scolarité, les factures et les paiements de vos enfants.</p>
+              <p className="text-sm text-neutral-600 max-w-2xl">
+                Suivez la scolarité, les factures et les paiements de vos enfants.
+                {selectedYear?.name ? ` Année: ${selectedYear.name}.` : ''}
+              </p>
               <div className="flex flex-wrap gap-2 text-xs text-neutral-600">
                 <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-white/80 border border-neutral-200">
                   <Icons.Calendar className="w-3.5 h-3.5 text-neutral-700" /> {new Date().toLocaleDateString('fr-FR')}
