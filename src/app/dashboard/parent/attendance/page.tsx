@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Icons } from '@/components/ui/Icons';
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
 import { toast } from 'sonner';
+import { useSchoolYear } from '@/context/SchoolYearContext';
 
 interface AttendanceRecord {
   id: string;
@@ -32,22 +33,25 @@ const MONTH_NAMES = [
 
 export default function ParentAttendancePage() {
   const { user } = useAuth();
+  const { selectedYearId, selectedYear } = useSchoolYear();
   const [children, setChildren] = useState<Child[]>([]);
   const [selectedChild, setSelectedChild] = useState<string>('');
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const calendarYear = selectedYear?.start_date
+    ? new Date(selectedYear.start_date).getFullYear()
+    : new Date().getFullYear();
 
   useEffect(() => {
     loadChildren();
-  }, [user]);
+  }, [user?.id, selectedYearId]);
 
   useEffect(() => {
     if (selectedChild) {
       loadAttendance();
     }
-  }, [selectedChild, selectedMonth, selectedYear]);
+  }, [selectedChild, selectedMonth, selectedYear?.start_date, selectedYear?.end_date]);
 
   // Abonnement aux changements des enfants
   useRealtimeSubscription({
@@ -85,14 +89,18 @@ export default function ParentAttendancePage() {
             id,
             first_name,
             last_name,
-            classes(name, level)
+            classes(name, level, year_id)
           )
         `)
         .eq('parent_id', user.id);
 
       if (error) throw error;
 
-      const childrenList = (data || []).map((ps: any) => ({
+      const yearFilteredChildren = selectedYearId
+        ? (data || []).filter((ps: any) => ps.students?.classes?.year_id === selectedYearId)
+        : (data || []);
+
+      const childrenList = yearFilteredChildren.map((ps: any) => ({
         id: ps.students.id,
         first_name: ps.students.first_name,
         last_name: ps.students.last_name,
@@ -101,6 +109,10 @@ export default function ParentAttendancePage() {
       }));
 
       setChildren(childrenList);
+      if (selectedChild && !childrenList.some((c) => c.id === selectedChild)) {
+        setSelectedChild('');
+        setAttendance([]);
+      }
       if (childrenList.length > 0 && !selectedChild) {
         setSelectedChild(childrenList[0].id);
       }
@@ -115,8 +127,8 @@ export default function ParentAttendancePage() {
       setIsLoading(true);
       if (!selectedChild) return;
       // Calcul des bornes de dates au format AAAA-MM-JJ pour éviter les décalages de fuseau (UTC)
-      const startDateStr = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-01`;
-      const endDateStr = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(new Date(selectedYear, selectedMonth + 1, 0).getDate()).padStart(2, '0')}`;
+      const startDateStr = `${calendarYear}-${String(selectedMonth + 1).padStart(2, '0')}-01`;
+      const endDateStr = `${calendarYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(new Date(calendarYear, selectedMonth + 1, 0).getDate()).padStart(2, '0')}`;
 
       const { data, error } = await supabase
         .from('attendance')
@@ -124,6 +136,8 @@ export default function ParentAttendancePage() {
         .eq('student_id', selectedChild)
         .gte('date', startDateStr)
         .lte('date', endDateStr)
+        .gte('date', selectedYear?.start_date || '1900-01-01')
+        .lte('date', selectedYear?.end_date || '2999-12-31')
         .order('date');
 
       if (error) throw error;
@@ -147,8 +161,8 @@ export default function ParentAttendancePage() {
       : 0,
   };
 
-  const monthStart = new Date(selectedYear, selectedMonth, 1);
-  const monthEnd = new Date(selectedYear, selectedMonth + 1, 0);
+  const monthStart = new Date(calendarYear, selectedMonth, 1);
+  const monthEnd = new Date(calendarYear, selectedMonth + 1, 0);
   const daysInMonth = monthEnd.getDate();
   // getDay() retourne 0=dimanche, on doit convertir en 0=lundi pour notre calendrier
   let firstDayOfWeek = monthStart.getDay();
@@ -167,7 +181,10 @@ export default function ParentAttendancePage() {
       {/* En-tête */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Présences et absences</h1>
-        <p className="text-gray-600">Suivi des présences de vos enfants à l'école</p>
+        <p className="text-gray-600">
+          Suivi des présences de vos enfants à l'école
+          {selectedYear?.name ? ` - Année: ${selectedYear.name}` : ''}
+        </p>
       </div>
 
       {/* Sélection enfant */}
@@ -232,28 +249,18 @@ export default function ParentAttendancePage() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => {
-                      if (selectedMonth === 0) {
-                        setSelectedMonth(11);
-                        setSelectedYear(selectedYear - 1);
-                      } else {
-                        setSelectedMonth(selectedMonth - 1);
-                      }
+                      setSelectedMonth(selectedMonth === 0 ? 11 : selectedMonth - 1);
                     }}
                     className="p-2 hover:bg-gray-100 rounded-lg"
                   >
                     <Icons.ChevronLeft className="w-5 h-5" />
                   </button>
                   <span className="font-semibold">
-                    {MONTH_NAMES[selectedMonth]} {selectedYear}
+                    {MONTH_NAMES[selectedMonth]} {calendarYear}
                   </span>
                   <button
                     onClick={() => {
-                      if (selectedMonth === 11) {
-                        setSelectedMonth(0);
-                        setSelectedYear(selectedYear + 1);
-                      } else {
-                        setSelectedMonth(selectedMonth + 1);
-                      }
+                      setSelectedMonth(selectedMonth === 11 ? 0 : selectedMonth + 1);
                     }}
                     className="p-2 hover:bg-gray-100 rounded-lg"
                   >
@@ -275,7 +282,7 @@ export default function ParentAttendancePage() {
                     return <div key={`empty-${idx}`} className="h-20" />;
                   }
 
-                  const dateStr = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                  const dateStr = `${calendarYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                   const daySessions = attendance.filter(a => a.date === dateStr);
                   const morningSession = daySessions.find((a: any) => a.session === 'MORNING');
                   const afternoonSession = daySessions.find((a: any) => a.session === 'AFTERNOON');

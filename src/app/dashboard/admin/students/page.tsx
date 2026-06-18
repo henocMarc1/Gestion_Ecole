@@ -11,6 +11,7 @@ import { useRealtimeSubscription, RealtimePayload } from '@/hooks/useRealtimeSub
 import { toast } from 'sonner';
 import Link from 'next/link';
 import { exportToPDFTable } from '@/utils/exportUtils';
+import { useSchoolYear } from '@/context/SchoolYearContext';
 
 interface Student {
   id: string;
@@ -27,6 +28,7 @@ interface Student {
 
 export default function StudentsPage() {
   const { user } = useAuth();
+  const { selectedYearId } = useSchoolYear();
   const [students, setStudents] = useState<Student[]>([]);
   const [filteredStudents, setFilteredStudents] = useState<Student[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -57,7 +59,7 @@ export default function StudentsPage() {
 
   useEffect(() => {
     loadData();
-  }, [user]);
+  }, [user?.school_id, selectedYearId]);
 
   useEffect(() => {
     filterStudents();
@@ -100,25 +102,46 @@ export default function StudentsPage() {
     if (!user?.school_id) return;
     setIsLoading(true);
     try {
-      const [studentsRes, classesRes] = await Promise.all([
-        supabase
-          .from('students')
-          .select('*, class:classes(name)')
-          .eq('school_id', user.school_id)
-          .is('deleted_at', null)
-          .order('last_name'),
-        supabase
-          .from('classes')
-          .select('id, name')
-          .eq('school_id', user.school_id)
-          .is('deleted_at', null)
-      ]);
+      let classesQuery = supabase
+        .from('classes')
+        .select('id, name')
+        .eq('school_id', user.school_id)
+        .is('deleted_at', null);
+
+      if (selectedYearId) {
+        classesQuery = classesQuery.eq('year_id', selectedYearId);
+      }
+
+      const classesRes = await classesQuery;
+      if (classesRes.error) throw classesRes.error;
+
+      const classIds = (classesRes.data || []).map((c: any) => c.id);
+
+      let studentsQuery = supabase
+        .from('students')
+        .select('*, class:classes(name)')
+        .eq('school_id', user.school_id)
+        .is('deleted_at', null)
+        .order('last_name');
+
+      if (selectedYearId) {
+        if (classIds.length > 0) {
+          studentsQuery = studentsQuery.in('class_id', classIds);
+        } else {
+          studentsQuery = studentsQuery.eq('id', '__none__');
+        }
+      }
+
+      const studentsRes = await studentsQuery;
 
       if (studentsRes.error) throw studentsRes.error;
-      if (classesRes.error) throw classesRes.error;
 
       setStudents(studentsRes.data || []);
       setClasses(classesRes.data || []);
+
+      if (formData.class_id && !classIds.includes(formData.class_id)) {
+        setFormData(prev => ({ ...prev, class_id: '' }));
+      }
     } catch (error) {
       toast.error('Erreur lors du chargement');
       console.error(error);

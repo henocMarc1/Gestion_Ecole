@@ -94,29 +94,42 @@ export default function AttendancePage() {
     setIsLoading(true);
     try {
       const [studentsRes, attendanceRes] = await Promise.all([
+        import { useSchoolYear } from '@/context/SchoolYearContext';
         supabase
           .from('students')
           .select('id, first_name, last_name')
+          const { selectedYearId, selectedYear } = useSchoolYear();
           .eq('class_id', selectedClass)
           .is('deleted_at', null)
           .order('last_name', { ascending: true })
-          .order('first_name', { ascending: true }),
+          }, [user?.id, selectedYearId]);
         supabase
           .from('attendance')
           .select('*')
-          .eq('class_id', selectedClass)
+                .select('class:classes(id, name, deleted_at, year_id)')
           .eq('date', selectedDate)
           .eq('session', selectedSession),
       ]);
 
       if (studentsRes.error) throw studentsRes.error;
-      if (attendanceRes.error) throw attendanceRes.error;
+                .filter((cls: any) => !cls.deleted_at)
+                .filter((cls: any) => !selectedYearId || cls.year_id === selectedYearId);
 
+
+              if (selectedClass && !activeClasses.some((cls: any) => cls.id === selectedClass)) {
+                setSelectedClass('');
+                setStudents([]);
+                setAttendance([]);
+                setRecords({});
+              }
       const studentList = studentsRes.data || [];
       const attendanceList = attendanceRes.data || [];
 
       setStudents(studentList);
-      setAttendance(attendanceList);
+                  <p className="text-neutral-600">
+                    Marquez les présences des élèves (matin et après-midi)
+                    {selectedYear?.name ? ` - Année: ${selectedYear.name}` : ''}
+                  </p>
 
       // Pré-remplir les enregistrements existants
       const recordsMap: Record<string, 'PRESENT' | 'ABSENT'> = {};

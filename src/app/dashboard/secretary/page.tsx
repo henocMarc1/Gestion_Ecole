@@ -34,7 +34,7 @@ interface SecretaryStats {
 export default function SecretaryDashboard() {
   const router = useRouter();
   const { user } = useAuth();
-  const { selectedYear } = useSchoolYear();
+  const { selectedYear, selectedYearId } = useSchoolYear();
   const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState<SecretaryStats>({
     totalStudents: 0,
@@ -63,14 +63,38 @@ export default function SecretaryDashboard() {
     try {
       if (!user?.school_id) return;
 
-      const studentsResponse = await supabase
+      let classesQuery = supabase
+        .from('classes')
+        .select('id, name, capacity')
+        .eq('school_id', user.school_id)
+        .is('deleted_at', null);
+
+      if (selectedYearId) {
+        classesQuery = classesQuery.eq('year_id', selectedYearId);
+      }
+
+      const { data: classesData } = await classesQuery;
+      const classIds = (classesData || []).map((c: any) => c.id);
+
+      let studentsQuery = supabase
         .from('students')
         .select('id, class_id', { count: 'exact' })
         .eq('school_id', user.school_id)
         .is('deleted_at', null);
+
+      if (selectedYearId) {
+        if (classIds.length > 0) {
+          studentsQuery = studentsQuery.in('class_id', classIds);
+        } else {
+          studentsQuery = studentsQuery.eq('id', '__none__');
+        }
+      }
+
+      const studentsResponse = await studentsQuery;
       if (studentsResponse.error) throw studentsResponse.error;
       const studentsCount = studentsResponse.count || 0;
       const studentsData = studentsResponse.data || [];
+      const studentIds = studentsData.map((s) => s.id);
 
       const certsResponse = await supabase
         .from('certificates')
@@ -158,13 +182,6 @@ export default function SecretaryDashboard() {
         0
       ) || 0;
 
-      // Classes surcharge
-      const { data: classesData } = await supabase
-        .from('classes')
-        .select('id, name, capacity')
-        .eq('school_id', user.school_id)
-        .is('deleted_at', null);
-
       let overloadedCount = 0;
       if (classesData) {
         for (const cls of classesData) {
@@ -180,10 +197,20 @@ export default function SecretaryDashboard() {
       }
 
       // Top absences par classe
-      const { data: absencesData } = await supabase
+      let absencesQuery = supabase
         .from('attendance')
         .select('student_id, students!inner(class_id, classes(name))')
         .in('status', ['ABSENT', 'LATE']);
+
+      if (selectedYearId) {
+        if (studentIds.length > 0) {
+          absencesQuery = absencesQuery.in('student_id', studentIds);
+        } else {
+          absencesQuery = absencesQuery.eq('id', '__none__');
+        }
+      }
+
+      const { data: absencesData } = await absencesQuery;
 
       const absencesByClass: Record<string, { name: string; count: number }> = {};
       absencesData?.forEach((a: any) => {
@@ -221,7 +248,7 @@ export default function SecretaryDashboard() {
 
   useEffect(() => {
     loadStats();
-  }, [user?.school_id, selectedYear?.id]);
+  }, [user?.school_id, selectedYearId, selectedYear?.id]);
 
   if (isLoading) {
     return (
@@ -282,7 +309,10 @@ export default function SecretaryDashboard() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Secrétariat</h1>
-        <p className="text-gray-600 mt-2">Gestion administrative et documents de l'école</p>
+        <p className="text-gray-600 mt-2">
+          Gestion administrative et documents de l'école
+          {selectedYear?.name ? ` - Année: ${selectedYear.name}` : ''}
+        </p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

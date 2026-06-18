@@ -9,6 +9,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Icons } from '@/components/ui/Icons';
 import { toast } from 'sonner';
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
+import { useSchoolYear } from '@/context/SchoolYearContext';
 
 interface Student {
   id: string;
@@ -26,6 +27,7 @@ interface Student {
 
 export default function StudentsSPage() {
   const { user } = useAuth();
+  const { selectedYearId, selectedYear } = useSchoolYear();
   const allowedRoles = ['SECRETARY', 'ADMIN', 'ACCOUNTANT'];
   const canViewDetails = allowedRoles.includes(user?.role || '');
   const [students, setStudents] = useState<Student[]>([]);
@@ -55,7 +57,7 @@ export default function StudentsSPage() {
 
   useEffect(() => {
     loadStudents();
-  }, [user]);
+  }, [user?.school_id, selectedYearId]);
 
   useEffect(() => {
     filterStudents();
@@ -65,24 +67,46 @@ export default function StudentsSPage() {
     if (!user?.school_id) return;
     setIsLoading(true);
     try {
-      const [studentsRes, classesRes] = await Promise.all([
-        supabase
-          .from('students')
-          .select('*, class:classes(name)')
-          .eq('school_id', user.school_id)
-          .is('deleted_at', null)
-          .order('last_name'),
-        supabase
-          .from('classes')
-          .select('id, name, level')
-          .eq('school_id', user.school_id)
-          .is('deleted_at', null)
-          .order('level, name')
-      ]);
+      let classesQuery = supabase
+        .from('classes')
+        .select('id, name, level')
+        .eq('school_id', user.school_id)
+        .is('deleted_at', null)
+        .order('level, name');
+
+      if (selectedYearId) {
+        classesQuery = classesQuery.eq('year_id', selectedYearId);
+      }
+
+      const { data: classesData, error: classesError } = await classesQuery;
+      if (classesError) throw classesError;
+
+      const classIds = (classesData || []).map((c: any) => c.id);
+
+      let studentsQuery = supabase
+        .from('students')
+        .select('*, class:classes(name)')
+        .eq('school_id', user.school_id)
+        .is('deleted_at', null)
+        .order('last_name');
+
+      if (selectedYearId) {
+        if (classIds.length > 0) {
+          studentsQuery = studentsQuery.in('class_id', classIds);
+        } else {
+          studentsQuery = studentsQuery.eq('id', '__none__');
+        }
+      }
+
+      const studentsRes = await studentsQuery;
 
       if (studentsRes.error) throw studentsRes.error;
+      if (selectedStudent && !classIds.includes(selectedStudent.class_id || '')) {
+        setSelectedStudent(null);
+        setIsDetailsModalOpen(false);
+      }
       setStudents(studentsRes.data || []);
-      setClasses(classesRes.data || []);
+      setClasses(classesData || []);
     } catch (error) {
       toast.error('Erreur lors du chargement');
       console.error(error);
@@ -120,6 +144,8 @@ export default function StudentsSPage() {
         .from('payments')
         .select('amount, created_at')
         .eq('student_id', student.id)
+        .gte('created_at', selectedYear?.start_date || '1900-01-01')
+        .lte('created_at', selectedYear?.end_date || '2999-12-31')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
