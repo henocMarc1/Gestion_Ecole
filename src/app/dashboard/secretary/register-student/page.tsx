@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/Input';
 import { Icons } from '@/components/ui/Icons';
 import { toast } from 'sonner';
 import { UserPlus, DollarSign, BookOpen, Users, Calendar, Check } from 'lucide-react';
+import { useSchoolYear } from '@/context/SchoolYearContext';
 
 interface Class {
   id: string;
@@ -54,6 +55,7 @@ const PAYMENT_METHODS = [
 
 export default function RegisterStudentPage() {
   const { user } = useAuth();
+  const { selectedYearId, selectedYear } = useSchoolYear();
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [classes, setClasses] = useState<Class[]>([]);
@@ -119,7 +121,7 @@ export default function RegisterStudentPage() {
       loadClasses();
       loadParents();
     }
-  }, [user]);
+  }, [user?.school_id, selectedYearId]);
 
   // Recherche côté base au fur et à mesure
   useEffect(() => {
@@ -151,7 +153,7 @@ export default function RegisterStudentPage() {
       setTuitionFee(null);
       setPaymentSchedules([]);
     }
-  }, [studentData.classId]);
+  }, [studentData.classId, selectedYear?.name]);
 
   useRealtimeSubscription({
     table: 'tuition_fees',
@@ -177,15 +179,25 @@ export default function RegisterStudentPage() {
 
   const loadClasses = async () => {
     try {
-      const { data, error } = await supabase
+      let classesQuery = supabase
         .from('classes')
         .select('id, name, level')
         .eq('school_id', user?.school_id)
         .is('deleted_at', null)
         .order('level, name');
 
+      if (selectedYearId) {
+        classesQuery = classesQuery.eq('year_id', selectedYearId);
+      }
+
+      const { data, error } = await classesQuery;
+
       if (error) throw error;
       setClasses(data || []);
+
+      if (studentData.classId && !(data || []).some((cls) => cls.id === studentData.classId)) {
+        setStudentData((prev) => ({ ...prev, classId: '' }));
+      }
     } catch (error) {
       console.error('Error loading classes:', error);
       toast.error('Erreur lors du chargement des classes');
@@ -239,14 +251,19 @@ export default function RegisterStudentPage() {
     setIsLoadingFees(true);
     try {
       // Charger les frais de scolarité pour cette classe
-      const { data: feesData, error: feesError } = await supabase
+      let feeQuery = supabase
         .from('tuition_fees')
         .select('*')
         .eq('class_id', classId)
         .eq('school_id', user?.school_id)
         .order('academic_year', { ascending: false })
-        .limit(1)
-        .single();
+        .limit(1);
+
+      if (selectedYear?.name) {
+        feeQuery = feeQuery.eq('academic_year', selectedYear.name);
+      }
+
+      const { data: feesData, error: feesError } = await feeQuery.single();
 
       if (feesError && feesError.code !== 'PGRST116') throw feesError;
 
