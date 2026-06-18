@@ -8,6 +8,7 @@ import { Icons } from '@/components/ui/Icons';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/utils/helpers';
 import { exportToExcel, exportToPDFTable } from '@/utils/exportUtils';
+import { useSchoolYear } from '@/context/SchoolYearContext';
 
 interface Report {
   title: string;
@@ -23,6 +24,7 @@ interface ClassOption {
 
 export default function ReportsPage() {
   const { user } = useAuth();
+  const { selectedYearId, selectedYear } = useSchoolYear();
   const [stats, setStats] = useState<any>({
     totalStudents: 0,
     totalClasses: 0,
@@ -43,16 +45,22 @@ export default function ReportsPage() {
   useEffect(() => {
     loadReportData();
     loadClasses();
-  }, [user]);
+  }, [user?.school_id, selectedYearId, selectedYear?.name]);
 
   const loadClasses = async () => {
     if (!user?.school_id) return;
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('classes')
         .select('id, name')
         .eq('school_id', user.school_id)
         .order('name');
+
+      if (selectedYearId) {
+        query = query.eq('year_id', selectedYearId);
+      }
+
+      const { data, error } = await query;
       
       if (error) throw error;
       setAvailableClasses(data || []);
@@ -102,15 +110,33 @@ export default function ReportsPage() {
     if (!user?.school_id) return;
     setIsLoading(true);
     try {
-      const [students, classes, teachers, invoices] = await Promise.all([
-        supabase
-          .from('students')
-          .select('id', { count: 'exact' })
-          .eq('school_id', user.school_id),
-        supabase
-          .from('classes')
-          .select('id', { count: 'exact' })
-          .eq('school_id', user.school_id),
+      let classesQuery = supabase
+        .from('classes')
+        .select('id', { count: 'exact' })
+        .eq('school_id', user.school_id);
+
+      if (selectedYearId) {
+        classesQuery = classesQuery.eq('year_id', selectedYearId);
+      }
+
+      const classes = await classesQuery;
+      const classIds = (classes.data || []).map((c: any) => c.id);
+
+      let studentsQuery = supabase
+        .from('students')
+        .select('id', { count: 'exact' })
+        .eq('school_id', user.school_id);
+
+      if (selectedYearId) {
+        if (classIds.length > 0) {
+          studentsQuery = studentsQuery.in('class_id', classIds);
+        } else {
+          studentsQuery = studentsQuery.eq('id', '__none__');
+        }
+      }
+
+      const [students, teachers, invoices] = await Promise.all([
+        studentsQuery,
         supabase
           .from('users')
           .select('id', { count: 'exact' })
@@ -119,7 +145,9 @@ export default function ReportsPage() {
         supabase
           .from('invoices')
           .select('total, status')
-          .eq('school_id', user.school_id),
+          .eq('school_id', user.school_id)
+          .gte('created_at', selectedYear?.start_date || '1900-01-01')
+          .lte('created_at', selectedYear?.end_date || '2999-12-31'),
       ]);
 
       const invoiceList = invoices.data || [];
@@ -441,10 +469,16 @@ export default function ReportsPage() {
         .eq('id', user?.school_id)
         .single();
 
-      const { data: classes, error } = await supabase
+      let classesQuery = supabase
         .from('classes')
         .select('id, name, year_id')
         .eq('school_id', user?.school_id);
+
+      if (selectedYearId) {
+        classesQuery = classesQuery.eq('year_id', selectedYearId);
+      }
+
+      const { data: classes, error } = await classesQuery;
 
       if (error) throw error;
 
@@ -519,10 +553,16 @@ export default function ReportsPage() {
 
   const handleExportClassesCSV = async () => {
     try {
-      const { data: classes, error } = await supabase
+      let classesQuery = supabase
         .from('classes')
         .select('id, name, year_id')
         .eq('school_id', user?.school_id);
+
+      if (selectedYearId) {
+        classesQuery = classesQuery.eq('year_id', selectedYearId);
+      }
+
+      const { data: classes, error } = await classesQuery;
 
       if (error) throw error;
 
@@ -755,6 +795,8 @@ export default function ReportsPage() {
         .from('invoices')
         .select('invoice_number, total, status, due_date, student_id')
         .eq('school_id', user?.school_id)
+        .gte('created_at', selectedYear?.start_date || '1900-01-01')
+        .lte('created_at', selectedYear?.end_date || '2999-12-31')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -819,6 +861,8 @@ export default function ReportsPage() {
         .from('invoices')
         .select('invoice_number, total, status, due_date, updated_at, student_id')
         .eq('school_id', user?.school_id)
+        .gte('created_at', selectedYear?.start_date || '1900-01-01')
+        .lte('created_at', selectedYear?.end_date || '2999-12-31')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -903,7 +947,10 @@ export default function ReportsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-semibold text-neutral-900">Rapports</h1>
-        <p className="text-sm text-neutral-600 mt-1">Générez et consultez les rapports de votre école</p>
+        <p className="text-sm text-neutral-600 mt-1">
+          Générez et consultez les rapports de votre école
+          {selectedYear?.name ? ` - Année: ${selectedYear.name}` : ''}
+        </p>
       </div>
 
       {/* Statistiques principales */}

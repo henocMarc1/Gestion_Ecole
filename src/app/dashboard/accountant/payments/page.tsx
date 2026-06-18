@@ -9,6 +9,7 @@ import { Icons } from '@/components/ui/Icons';
 import { useRealtimeSubscription, RealtimePayload } from '@/hooks/useRealtimeSubscription';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/utils/helpers';
+import { useSchoolYear } from '@/context/SchoolYearContext';
 
 interface Payment {
   id: string;
@@ -26,6 +27,7 @@ interface Payment {
 
 export default function PaymentsPage() {
   const { user } = useAuth();
+  const { selectedYear } = useSchoolYear();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
@@ -39,7 +41,7 @@ export default function PaymentsPage() {
 
   useEffect(() => {
     loadData();
-  }, [user]);
+  }, [user?.school_id, selectedYear?.id]);
 
   // Abonnement aux changements des paiements
   useRealtimeSubscription({
@@ -84,13 +86,17 @@ export default function PaymentsPage() {
           .select('*, invoice:invoices(student:students(first_name, last_name))')
           .eq('school_id', user.school_id)
           .is('deleted_at', null)
+          .gte('payment_date', selectedYear?.start_date || '1900-01-01')
+          .lte('payment_date', selectedYear?.end_date || '2999-12-31')
           .order('created_at', { ascending: false }),
         supabase
           .from('invoices')
           .select('id, total, student:students(first_name, last_name)')
           .eq('school_id', user.school_id)
           .neq('status', 'PAID')
-          .is('deleted_at', null),
+          .is('deleted_at', null)
+          .gte('created_at', selectedYear?.start_date || '1900-01-01')
+          .lte('created_at', selectedYear?.end_date || '2999-12-31'),
       ]);
 
       if (paymentsRes.error) throw paymentsRes.error;
@@ -158,7 +164,10 @@ export default function PaymentsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-semibold text-neutral-900">Gestion des paiements</h1>
-        <p className="text-sm text-neutral-600 mt-1">Enregistrez et suivez les paiements des factures</p>
+        <p className="text-sm text-neutral-600 mt-1">
+          Enregistrez et suivez les paiements des factures
+          {selectedYear?.name ? ` - Année: ${selectedYear.name}` : ''}
+        </p>
       </div>
 
       {/* Statistiques */}

@@ -9,6 +9,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Icons } from '@/components/ui/Icons';
 import { toast } from 'sonner';
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
+import { useSchoolYear } from '@/context/SchoolYearContext';
 
 interface SecretaryStats {
   totalStudents: number;
@@ -33,6 +34,7 @@ interface SecretaryStats {
 export default function SecretaryDashboard() {
   const router = useRouter();
   const { user } = useAuth();
+  const { selectedYear } = useSchoolYear();
   const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState<SecretaryStats>({
     totalStudents: 0,
@@ -82,11 +84,17 @@ export default function SecretaryDashboard() {
       const certsIssued = certsData?.filter((c) => c.status === 'ISSUED').length || 0;
 
       // Finance KPIs - frais de scolarite
-      const { data: tuitionFeesData } = await supabase
+      let tuitionFeesQuery = supabase
         .from('tuition_fees')
         .select('class_id, total_amount, registration_fee, other_fees, academic_year')
         .eq('school_id', user.school_id)
         .order('academic_year', { ascending: false });
+
+      if (selectedYear?.name) {
+        tuitionFeesQuery = tuitionFeesQuery.eq('academic_year', selectedYear.name);
+      }
+
+      const { data: tuitionFeesData } = await tuitionFeesQuery;
 
       const classCounts = new Map<string, number>();
       studentsData.forEach((student) => {
@@ -122,7 +130,9 @@ export default function SecretaryDashboard() {
       const { data: tuitionPaymentsAll } = await supabase
         .from('tuition_payments')
         .select('amount')
-        .eq('school_id', user.school_id);
+        .eq('school_id', user.school_id)
+        .gte('payment_date', selectedYear?.start_date || '1900-01-01')
+        .lte('payment_date', selectedYear?.end_date || '2999-12-31');
 
       const totalPaid = (tuitionPaymentsAll || []).reduce(
         (sum, payment) => sum + (Number(payment.amount) || 0),
@@ -139,7 +149,9 @@ export default function SecretaryDashboard() {
         .from('tuition_payments')
         .select('amount')
         .eq('school_id', user.school_id)
-        .gte('payment_date', thirtyDaysAgo.toISOString().split('T')[0]);
+        .gte('payment_date', thirtyDaysAgo.toISOString().split('T')[0])
+        .gte('payment_date', selectedYear?.start_date || '1900-01-01')
+        .lte('payment_date', selectedYear?.end_date || '2999-12-31');
       const paymentsLast30Days = recentTuitionPayments?.length || 0;
       const totalRevenue30Days = recentTuitionPayments?.reduce(
         (sum, p) => sum + (Number(p.amount) || 0),
@@ -209,7 +221,7 @@ export default function SecretaryDashboard() {
 
   useEffect(() => {
     loadStats();
-  }, [user?.school_id]);
+  }, [user?.school_id, selectedYear?.id]);
 
   if (isLoading) {
     return (

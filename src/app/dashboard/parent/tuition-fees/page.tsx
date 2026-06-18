@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Icons } from '@/components/ui/Icons';
 import { toast } from 'sonner';
 import { Calendar, DollarSign, BookOpen, User } from 'lucide-react';
+import { useSchoolYear } from '@/context/SchoolYearContext';
 
 interface Child {
   id: string;
@@ -49,6 +50,7 @@ const MONTHS = [
 
 export default function ParentTuitionFeesPage() {
   const { user } = useAuth();
+  const { selectedYear } = useSchoolYear();
   const [children, setChildren] = useState<ChildWithFees[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
@@ -71,7 +73,7 @@ export default function ParentTuitionFeesPage() {
     if (user?.id) {
       loadChildrenWithFees();
     }
-  }, [user]);
+  }, [user?.id, selectedYear?.name]);
 
   const loadChildrenWithFees = async () => {
     if (!user?.id) return;
@@ -116,14 +118,19 @@ export default function ParentTuitionFeesPage() {
           }
 
           // Récupérer les frais de scolarité pour la classe de l'élève
-          const { data: feeData, error: feeError } = await supabase
+          let feeQuery = supabase
             .from('tuition_fees')
             .select('*')
             .eq('class_id', student.class_id)
             .eq('school_id', user.school_id)
             .order('academic_year', { ascending: false })
-            .limit(1)
-            .maybeSingle();
+            .limit(1);
+
+          if (selectedYear?.name) {
+            feeQuery = feeQuery.eq('academic_year', selectedYear.name);
+          }
+
+          const { data: feeData, error: feeError } = await feeQuery.maybeSingle();
 
           if (feeError && feeError.code !== 'PGRST116') {
             console.error('Error loading fee:', feeError);
@@ -192,7 +199,10 @@ export default function ParentTuitionFeesPage() {
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Frais de scolarité</h1>
-          <p className="text-gray-600 mt-2">Consultez les frais et échéanciers de paiement</p>
+          <p className="text-gray-600 mt-2">
+            Consultez les frais et échéanciers de paiement
+            {selectedYear?.name ? ` - Année: ${selectedYear.name}` : ''}
+          </p>
         </div>
         <Card>
           <CardContent className="p-12 text-center">

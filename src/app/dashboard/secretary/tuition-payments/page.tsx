@@ -11,6 +11,7 @@ import { Icons } from '@/components/ui/Icons';
 import { notifyPaymentReceived } from '@/lib/notificationHelpers';
 import { toast } from 'sonner';
 import { DollarSign, User, Calendar, Check, X, Plus, Search } from 'lucide-react';
+import { useSchoolYear } from '@/context/SchoolYearContext';
 
 interface Student {
   id: string;
@@ -72,6 +73,7 @@ const MONTHS = [
 
 export default function TuitionPaymentsPage() {
   const { user } = useAuth();
+  const { selectedYearId, selectedYear } = useSchoolYear();
   const [students, setStudents] = useState<StudentPaymentStatus[]>([]);
   const [filteredStudents, setFilteredStudents] = useState<StudentPaymentStatus[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -94,7 +96,7 @@ export default function TuitionPaymentsPage() {
     if (user?.school_id) {
       loadStudentsWithPayments();
     }
-  }, [user]);
+  }, [user?.school_id, selectedYearId, selectedYear?.name]);
 
   useEffect(() => {
     filterStudents();
@@ -126,13 +128,36 @@ export default function TuitionPaymentsPage() {
 
     setIsLoading(true);
     try {
+      let classIds: string[] = [];
+      if (selectedYearId) {
+        const { data: classesData, error: classesError } = await supabase
+          .from('classes')
+          .select('id')
+          .eq('school_id', user.school_id)
+          .eq('year_id', selectedYearId)
+          .is('deleted_at', null);
+
+        if (classesError) throw classesError;
+        classIds = (classesData || []).map((c) => c.id);
+      }
+
       // Récupérer tous les élèves avec leurs classes
-      const { data: studentsData, error: studentsError } = await supabase
+      let studentsQuery = supabase
         .from('students')
         .select('id, first_name, last_name, matricule, photo_url, class_id, classes(name)')
         .eq('school_id', user.school_id)
         .is('deleted_at', null)
         .order('last_name');
+
+      if (selectedYearId) {
+        if (classIds.length > 0) {
+          studentsQuery = studentsQuery.in('class_id', classIds);
+        } else {
+          studentsQuery = studentsQuery.eq('id', '__none__');
+        }
+      }
+
+      const { data: studentsData, error: studentsError } = await studentsQuery;
 
       if (studentsError) throw studentsError;
 
@@ -152,14 +177,19 @@ export default function TuitionPaymentsPage() {
           }
 
           // Récupérer les frais de scolarité
-          const { data: feeData } = await supabase
+          let feeQuery = supabase
             .from('tuition_fees')
             .select('*')
             .eq('class_id', student.class_id)
             .eq('school_id', user.school_id)
             .order('academic_year', { ascending: false })
-            .limit(1)
-            .maybeSingle();
+            .limit(1);
+
+          if (selectedYear?.name) {
+            feeQuery = feeQuery.eq('academic_year', selectedYear.name);
+          }
+
+          const { data: feeData } = await feeQuery.maybeSingle();
 
           let schedules: PaymentSchedule[] = [];
           if (feeData) {
@@ -484,7 +514,10 @@ export default function TuitionPaymentsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Paiements des frais de scolarité</h1>
-        <p className="text-gray-600 mt-2">Enregistrer et suivre les paiements des élèves</p>
+        <p className="text-gray-600 mt-2">
+          Enregistrer et suivre les paiements des élèves
+          {selectedYear?.name ? ` - Année: ${selectedYear.name}` : ''}
+        </p>
       </div>
 
       {/* Statistiques */}

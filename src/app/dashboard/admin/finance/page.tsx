@@ -8,6 +8,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Icons } from '@/components/ui/Icons';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/utils/helpers';
+import { useSchoolYear } from '@/context/SchoolYearContext';
 
 interface FinanceStats {
   totalInvoices: number;
@@ -29,6 +30,7 @@ interface Invoice {
 
 export default function FinancesPage() {
   const { user } = useAuth();
+  const { selectedYear } = useSchoolYear();
   const [stats, setStats] = useState<FinanceStats>({
     totalInvoices: 0,
     paidInvoices: 0,
@@ -41,7 +43,7 @@ export default function FinancesPage() {
 
   useEffect(() => {
     loadFinanceData();
-  }, [user]);
+  }, [user?.school_id, selectedYear?.id]);
 
   const loadFinanceData = async () => {
     if (!user?.school_id) return;
@@ -52,6 +54,8 @@ export default function FinancesPage() {
         .select('*, student:students(first_name, last_name)')
         .eq('school_id', user.school_id)
         .is('deleted_at', null)
+        .gte('created_at', selectedYear?.start_date || '1900-01-01')
+        .lte('created_at', selectedYear?.end_date || '2999-12-31')
         .order('created_at', { ascending: false })
         .limit(20);
 
@@ -84,7 +88,10 @@ export default function FinancesPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-semibold text-neutral-900">Finances</h1>
-        <p className="text-sm text-neutral-600 mt-1">Vue d'ensemble financière de l'école</p>
+        <p className="text-sm text-neutral-600 mt-1">
+          Vue d'ensemble financière de l'école
+          {selectedYear?.name ? ` - Année: ${selectedYear.name}` : ''}
+        </p>
       </div>
 
       {/* Statistics */}

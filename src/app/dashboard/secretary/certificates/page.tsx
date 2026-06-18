@@ -9,6 +9,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { Icons } from '@/components/ui/Icons';
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
+import { useSchoolYear } from '@/context/SchoolYearContext';
 
 interface StudentSuggestion {
   id: string;
@@ -64,6 +65,7 @@ function formatGender(gender?: string | null) {
 
 export default function CertificatesPage() {
   const { user } = useAuth();
+  const { selectedYear } = useSchoolYear();
   const [isLoading, setIsLoading] = useState(true);
   const [school, setSchool] = useState<SchoolInfo | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -92,7 +94,13 @@ export default function CertificatesPage() {
       loadSchool();
       loadHistory();
     }
-  }, [user?.school_id]);
+  }, [user?.school_id, selectedYear?.name]);
+
+  useEffect(() => {
+    if (selectedYear?.name) {
+      setAcademicYear(selectedYear.name);
+    }
+  }, [selectedYear?.name]);
 
   useEffect(() => {
     if (!user?.school_id) return;
@@ -169,6 +177,7 @@ export default function CertificatesPage() {
       `)
       .eq('school_id', user.school_id)
       .eq('certificate_type', 'FREQUENCY')
+      .eq('academic_year', selectedYear?.name || academicYear)
       .order('request_date', { ascending: false });
 
     if (error) {
@@ -392,7 +401,7 @@ export default function CertificatesPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="text-xs text-gray-500">Année scolaire</label>
-              <Input value={academicYear} onChange={(e) => setAcademicYear(e.target.value)} />
+              <Input value={academicYear} onChange={(e) => setAcademicYear(e.target.value)} disabled />
             </div>
             <div>
               <label className="text-xs text-gray-500">Filière / Option</label>

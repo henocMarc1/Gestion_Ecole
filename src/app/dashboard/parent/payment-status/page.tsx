@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Icons } from '@/components/ui/Icons';
 import { toast } from 'sonner';
 import { DollarSign, Calendar, Check, User } from 'lucide-react';
+import { useSchoolYear } from '@/context/SchoolYearContext';
 
 interface Child {
   id: string;
@@ -58,6 +59,7 @@ const PAYMENT_METHODS: Record<string, string> = {
 
 export default function ParentPaymentStatusPage() {
   const { user } = useAuth();
+  const { selectedYear } = useSchoolYear();
   const [children, setChildren] = useState<ChildPaymentStatus[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedChild, setSelectedChild] = useState<string | null>(null);
@@ -66,7 +68,7 @@ export default function ParentPaymentStatusPage() {
     if (user?.id) {
       loadChildrenPaymentStatus();
     }
-  }, [user]);
+  }, [user?.id, selectedYear?.name]);
 
   const loadChildrenPaymentStatus = async () => {
     if (!user?.id) return;
@@ -114,14 +116,19 @@ export default function ParentPaymentStatusPage() {
           }
 
           // Récupérer les frais de scolarité
-          const { data: feeData } = await supabase
+          let feeQuery = supabase
             .from('tuition_fees')
             .select('*')
             .eq('class_id', student.class_id)
             .eq('school_id', user.school_id)
             .order('academic_year', { ascending: false })
-            .limit(1)
-            .maybeSingle();
+            .limit(1);
+
+          if (selectedYear?.name) {
+            feeQuery = feeQuery.eq('academic_year', selectedYear.name);
+          }
+
+          const { data: feeData } = await feeQuery.maybeSingle();
 
           // Récupérer les paiements
           const { data: paymentsData } = await supabase
@@ -240,12 +247,16 @@ export default function ParentPaymentStatusPage() {
     );
   }
 
+
   if (children.length === 0) {
     return (
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Avancement des paiements</h1>
-          <p className="text-gray-600 mt-2">Suivez l'état des paiements des frais de scolarité</p>
+          <p className="text-gray-600 mt-2">
+            Suivez l'état des paiements des frais de scolarité
+            {selectedYear?.name ? ` - Année: ${selectedYear.name}` : ''}
+          </p>
         </div>
         <Card>
           <CardContent className="p-12 text-center">
@@ -262,7 +273,10 @@ export default function ParentPaymentStatusPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Avancement des paiements</h1>
-        <p className="text-gray-600 mt-2">Suivez l'état des paiements des frais de scolarité de vos enfants</p>
+        <p className="text-gray-600 mt-2">
+          Suivez l'état des paiements des frais de scolarité de vos enfants
+          {selectedYear?.name ? ` - Année: ${selectedYear.name}` : ''}
+        </p>
       </div>
 
       {/* Sélection de l'enfant */}

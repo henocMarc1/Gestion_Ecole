@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/utils/helpers';
 import { exportToExcel, exportToPDFTable } from '@/utils/exportUtils';
+import { useSchoolYear } from '@/context/SchoolYearContext';
 import {
   ResponsiveContainer,
   PieChart,
@@ -50,6 +51,7 @@ interface MonthlyPoint {
 
 export default function AccountantReportsPage() {
   const { user } = useAuth();
+  const { selectedYear } = useSchoolYear();
   const [stats, setStats] = useState<ReportStats>({
     totalRevenue: 0,
     totalExpenses: 0,
@@ -128,7 +130,7 @@ export default function AccountantReportsPage() {
 
   useEffect(() => {
     loadReportData();
-  }, [user, selectedPeriod]);
+  }, [user, selectedPeriod, selectedYear?.id]);
 
   useEffect(() => {
     loadSchoolInfo();
@@ -161,7 +163,9 @@ export default function AccountantReportsPage() {
         .select('amount, status')
         .eq('school_id', user.school_id)
         .gte('created_at', `${selectedPeriod}-01`)
-        .lt('created_at', `${selectedPeriod}-31`);
+        .lt('created_at', `${selectedPeriod}-31`)
+        .gte('created_at', selectedYear?.start_date || '1900-01-01')
+        .lte('created_at', selectedYear?.end_date || '2999-12-31');
 
       const paidInvoiceCount = (invoices || []).filter(i => i.status === 'PAID').length;
       const unpaidInvoiceCount = (invoices || []).filter(i => i.status !== 'PAID').length;
@@ -171,7 +175,9 @@ export default function AccountantReportsPage() {
         .from('treasury_transactions')
         .select('amount')
         .eq('school_id', user.school_id)
-        .eq('type', 'OUTFLOW');
+        .eq('type', 'OUTFLOW')
+        .gte('date', selectedYear?.start_date || '1900-01-01')
+        .lte('date', selectedYear?.end_date || '2999-12-31');
 
       const treasuryOutflowTotal = (treasuryOutflowsAll || []).reduce(
         (sum, flow) => sum + (Number(flow.amount) || 0),
@@ -183,7 +189,9 @@ export default function AccountantReportsPage() {
         .from('invoices')
         .select('amount')
         .eq('school_id', user.school_id)
-        .eq('status', 'PAID');
+        .eq('status', 'PAID')
+        .gte('created_at', selectedYear?.start_date || '1900-01-01')
+        .lte('created_at', selectedYear?.end_date || '2999-12-31');
 
       const invoiceExpensesAll = (paidInvoicesAll || []).reduce(
         (sum, invoice) => sum + (Number(invoice.amount) || 0),
@@ -195,7 +203,9 @@ export default function AccountantReportsPage() {
         .from('payrolls')
         .select('net_salary')
         .eq('school_id', user.school_id)
-        .eq('status', 'PAID');
+        .eq('status', 'PAID')
+        .gte('created_at', selectedYear?.start_date || '1900-01-01')
+        .lte('created_at', selectedYear?.end_date || '2999-12-31');
 
       const payrollTotalAll = (paidPayrollsAll || []).reduce(
         (sum, payroll) => sum + (Number(payroll.net_salary) || 0),
@@ -206,7 +216,9 @@ export default function AccountantReportsPage() {
       const { data: allPayments } = await supabase
         .from('payments')
         .select('amount')
-        .eq('school_id', user.school_id);
+        .eq('school_id', user.school_id)
+        .gte('created_at', selectedYear?.start_date || '1900-01-01')
+        .lte('created_at', selectedYear?.end_date || '2999-12-31');
 
       const generalPaymentRevenue = (allPayments || []).reduce(
         (sum, p) => sum + (Number(p.amount) || 0),
@@ -218,7 +230,9 @@ export default function AccountantReportsPage() {
       const { data: allTuitionPayments } = await supabase
         .from('tuition_payments')
         .select('amount')
-        .eq('school_id', user.school_id);
+        .eq('school_id', user.school_id)
+        .gte('created_at', selectedYear?.start_date || '1900-01-01')
+        .lte('created_at', selectedYear?.end_date || '2999-12-31');
 
       const tuitionRevenue = (allTuitionPayments || []).reduce(
         (sum, p) => sum + (Number(p.amount) || 0),
@@ -265,14 +279,18 @@ export default function AccountantReportsPage() {
         .select('amount, created_at')
         .eq('school_id', user.school_id)
         .gte('created_at', rangeStart)
-        .lt('created_at', rangeEnd);
+        .lt('created_at', rangeEnd)
+        .gte('created_at', selectedYear?.start_date || '1900-01-01')
+        .lte('created_at', selectedYear?.end_date || '2999-12-31');
 
       const { data: tuitionPaymentsRange } = await supabase
         .from('tuition_payments')
         .select('amount, created_at')
         .eq('school_id', user.school_id)
         .gte('created_at', rangeStart)
-        .lt('created_at', rangeEnd);
+        .lt('created_at', rangeEnd)
+        .gte('created_at', selectedYear?.start_date || '1900-01-01')
+        .lte('created_at', selectedYear?.end_date || '2999-12-31');
 
       const { data: invoicesRange } = await supabase
         .from('invoices')
@@ -280,7 +298,9 @@ export default function AccountantReportsPage() {
         .eq('school_id', user.school_id)
         .eq('status', 'PAID')
         .gte('created_at', rangeStart)
-        .lt('created_at', rangeEnd);
+        .lt('created_at', rangeEnd)
+        .gte('created_at', selectedYear?.start_date || '1900-01-01')
+        .lte('created_at', selectedYear?.end_date || '2999-12-31');
 
       const { data: payrollsRange } = await supabase
         .from('payrolls')
@@ -288,7 +308,9 @@ export default function AccountantReportsPage() {
         .eq('school_id', user.school_id)
         .eq('status', 'PAID')
         .gte('created_at', rangeStart)
-        .lt('created_at', rangeEnd);
+        .lt('created_at', rangeEnd)
+        .gte('created_at', selectedYear?.start_date || '1900-01-01')
+        .lte('created_at', selectedYear?.end_date || '2999-12-31');
 
       const { data: treasuryOutflowsRange } = await supabase
         .from('treasury_transactions')
@@ -296,7 +318,9 @@ export default function AccountantReportsPage() {
         .eq('school_id', user.school_id)
         .eq('type', 'OUTFLOW')
         .gte('date', rangeStart)
-        .lt('date', rangeEnd);
+        .lt('date', rangeEnd)
+        .gte('date', selectedYear?.start_date || '1900-01-01')
+        .lte('date', selectedYear?.end_date || '2999-12-31');
 
       const monthlyMap = new Map(
         recentMonths.map((month) => [
@@ -410,7 +434,10 @@ export default function AccountantReportsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-neutral-900">Rapports Financiers</h1>
-          <p className="text-sm text-neutral-600">Consultez les rapports financiers de l'école</p>
+          <p className="text-sm text-neutral-600">
+            Consultez les rapports financiers de l'école
+            {selectedYear?.name ? ` - Année: ${selectedYear.name}` : ''}
+          </p>
         </div>
         <div className="flex gap-3">
           <input

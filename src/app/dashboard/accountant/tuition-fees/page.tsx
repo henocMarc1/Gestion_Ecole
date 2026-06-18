@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { DollarSign, Plus, Edit2, Trash2, Calendar, Save, X } from 'lucide-react';
+import { useSchoolYear } from '@/context/SchoolYearContext';
 
 interface Class {
   id: string;
@@ -40,6 +41,7 @@ const MONTHS = [
 ];
 
 export default function AccountantTuitionFeesPage() {
+  const { selectedYearId, selectedYear } = useSchoolYear();
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [classes, setClasses] = useState<Class[]>([]);
   const [tuitionFees, setTuitionFees] = useState<TuitionFee[]>([]);
@@ -52,7 +54,7 @@ export default function AccountantTuitionFeesPage() {
 
   const [newFee, setNewFee] = useState({
     classId: '',
-    academicYear: '2025-2026',
+    academicYear: '',
     totalAmount: '',
     registrationFee: '',
     otherFees: '',
@@ -111,12 +113,18 @@ export default function AccountantTuitionFeesPage() {
     try {
       if (!currentUser) return;
 
-      const { data } = await supabase
+      let query = supabase
         .from('classes')
         .select('id, name, level')
         .eq('school_id', currentUser.school_id)
         .is('deleted_at', null)
         .order('level, name');
+
+      if (selectedYearId) {
+        query = query.eq('year_id', selectedYearId);
+      }
+
+      const { data } = await query;
 
       if (data) {
         setClasses(data);
@@ -131,11 +139,17 @@ export default function AccountantTuitionFeesPage() {
     try {
       if (!currentUser) return;
 
-      const { data } = await supabase
+      let query = supabase
         .from('tuition_fees')
         .select('id, class_id, academic_year, total_amount, registration_fee, other_fees, description, classes(name)')
         .eq('school_id', currentUser.school_id)
         .order('academic_year', { ascending: false });
+
+      if (selectedYear?.name) {
+        query = query.eq('academic_year', selectedYear.name);
+      }
+
+      const { data } = await query;
 
       if (data) {
         const formatted = data.map((tf: any) => ({
@@ -211,7 +225,7 @@ export default function AccountantTuitionFeesPage() {
 
       setNewFee({
         classId: '',
-        academicYear: '2025-2026',
+        academicYear: selectedYear?.name || '',
         totalAmount: '',
         registrationFee: '',
         otherFees: '',
@@ -292,7 +306,13 @@ export default function AccountantTuitionFeesPage() {
       loadClasses();
       loadTuitionFees();
     }
-  }, [currentUser]);
+  }, [currentUser, selectedYearId, selectedYear?.name]);
+
+  useEffect(() => {
+    if (selectedYear?.name) {
+      setNewFee((prev) => ({ ...prev, academicYear: selectedYear.name }));
+    }
+  }, [selectedYear?.name]);
 
   useEffect(() => {
     if (selectedTuitionFee) {
@@ -324,7 +344,10 @@ export default function AccountantTuitionFeesPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Frais de Scolarité</h1>
-          <p className="text-gray-600 mt-2">Gérer les frais et les échéanciers de paiement</p>
+          <p className="text-gray-600 mt-2">
+            Gérer les frais et les échéanciers de paiement
+            {selectedYear?.name ? ` - Année: ${selectedYear.name}` : ''}
+          </p>
         </div>
         <Button
           onClick={() => {
@@ -332,7 +355,7 @@ export default function AccountantTuitionFeesPage() {
             setEditingFee(null);
             setNewFee({
               classId: '',
-              academicYear: '2025-2026',
+              academicYear: selectedYear?.name || '',
               totalAmount: '',
               registrationFee: '',
               otherFees: '',
@@ -381,9 +404,10 @@ export default function AccountantTuitionFeesPage() {
                 </label>
                 <Input
                   type="text"
-                  placeholder="ex: 2025-2026"
+                  placeholder="Année scolaire active"
                   value={newFee.academicYear}
                   onChange={(e) => setNewFee({ ...newFee, academicYear: e.target.value })}
+                  disabled
                 />
               </div>
 

@@ -10,12 +10,15 @@ import { Icons } from '@/components/ui/Icons';
 import { useRealtimeSubscription, RealtimePayload } from '@/hooks/useRealtimeSubscription';
 import { notifyNewClass, notifyClassModified } from '@/lib/notificationHelpers';
 import { toast } from 'sonner';
+import { useSchoolYear } from '@/context/SchoolYearContext';
 
 interface Class {
   id: string;
   name: string;
   level: string;
   capacity: number;
+  year_id?: string;
+  year_name?: string;
   student_count?: number;
   teacher_count?: number;
   created_at: string;
@@ -37,6 +40,7 @@ interface TuitionFeeData {
 
 export default function ClassesPage() {
   const { user } = useAuth();
+  const { selectedYearId, setSelectedYearId } = useSchoolYear();
   const [classes, setClasses] = useState<Class[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
@@ -61,13 +65,13 @@ export default function ClassesPage() {
 
   useEffect(() => {
     loadClasses();
-  }, [user]);
+  }, [user?.school_id, selectedYearId]);
 
   useEffect(() => {
     if (selectedClass && modalTab === 'fees') {
-      loadClassTuitionFees(selectedClass.id);
+      loadClassTuitionFees(selectedClass.id, currentYear?.name);
     }
-  }, [selectedClass, modalTab]);
+  }, [selectedClass, modalTab, currentYear?.id]);
 
   useRealtimeSubscription({
     table: 'classes',
@@ -89,73 +93,55 @@ export default function ClassesPage() {
   });
 
   const handleRealtimeClassUpdate = (payload: RealtimePayload) => {
-    const newClass = payload.new;
-    const oldClass = payload.old;
-
-    switch (payload.eventType) {
-      case 'INSERT':
-        setClasses(prev => [
-          ...prev,
-          {
-            id: newClass.id,
-            name: newClass.name,
-            level: newClass.level,
-            capacity: newClass.capacity,
-            student_count: 0,
-            teacher_count: 0,
-            created_at: newClass.created_at,
-          }
-        ]);
-        toast.success('Nouvelle classe ajoutée');
-        break;
-
-      case 'UPDATE':
-        setClasses(prev =>
-          prev.map(cls =>
-            cls.id === newClass.id
-              ? {
-                  ...cls,
-                  name: newClass.name,
-                  level: newClass.level,
-                  capacity: newClass.capacity,
-                }
-              : cls
-          )
-        );
-        toast.success('Classe mise à jour');
-        break;
-
-      case 'DELETE':
-        setClasses(prev => prev.filter(cls => cls.id !== oldClass.id));
-        if (selectedClass?.id === oldClass.id) {
-          setSelectedClass(null);
-        }
-        toast.success('Classe supprimée');
-        break;
+    if (payload.eventType === 'DELETE' && selectedClass?.id === payload.old?.id) {
+      setSelectedClass(null);
     }
+    loadClasses();
   };
 
   const loadClasses = async () => {
     if (!user?.school_id) return;
     setIsLoading(true);
     try {
+      const yearsQueryResult = await supabase
+        .from('years')
+        .select('id, name, is_current, start_date, end_date')
+        .eq('school_id', user.school_id)
+        .is('deleted_at', null)
+        .order('start_date', { ascending: false });
+
+      if (yearsQueryResult.error) throw yearsQueryResult.error;
+
+      const loadedYears = yearsQueryResult.data || [];
+      setYears(loadedYears);
+
+      if (selectedYearId) {
+        const selectedYear = loadedYears.find((y: any) => y.id === selectedYearId) || null;
+        setCurrentYear(selectedYear);
+      } else {
+        const current = loadedYears.find((y: any) => y.is_current) || loadedYears[0] || null;
+        setCurrentYear(current);
+      }
+
+      let classesQuery = supabase
+        .from('classes')
+        .select(`
+          *,
+          students(id),
+          teacher_classes(id),
+          year:years(id, name)
+        `)
+        .eq('school_id', user.school_id)
+        .is('deleted_at', null)
+        .order('name');
+
+      if (selectedYearId) {
+        classesQuery = classesQuery.eq('year_id', selectedYearId);
+      }
+
       const [classesRes, yearsRes, teachersRes] = await Promise.all([
-        supabase
-          .from('classes')
-          .select(`
-            *,
-            students(id),
-            teacher_classes(id),
-            year:years(name)
-          `)
-          .eq('school_id', user.school_id)
-          .is('deleted_at', null)
-          .order('name'),
-        supabase
-          .from('years')
-          .select('id, name')
-          .eq('school_id', user.school_id)
-          .is('deleted_at', null),
+        classesQuery,
+        Promise.resolve({ data: loadedYears, error: null as any }),
         supabase
           .from('users')
           .select('id, full_name')
@@ -175,6 +161,8 @@ export default function ClassesPage() {
         name: cls.name,
         level: cls.level,
         capacity: cls.capacity,
+        year_id: cls.year_id,
+        year_name: cls.year?.name,
         student_count: cls.students?.length || 0,
         teacher_count: cls.teacher_classes?.length || 0,
         created_at: cls.created_at,
@@ -336,15 +324,20 @@ export default function ClassesPage() {
     }
   };
 
-  const loadClassTuitionFees = async (classId: string) => {
+  const loadClassTuitionFees = async (classId: string, yearName?: string) => {
     try {
-      const { data: fees, error } = await supabase
+      let feeQuery = supabase
         .from('tuition_fees')
         .select('*')
         .eq('class_id', classId)
         .eq('school_id', user?.school_id)
-        .order('academic_year', { ascending: false })
-        .maybeSingle();
+        .order('academic_year', { ascending: false });
+
+      if (yearName) {
+        feeQuery = feeQuery.eq('academic_year', yearName);
+      }
+
+      const { data: fees, error } = await feeQuery.maybeSingle();
 
       if (error && error.code !== 'PGRST116') throw error;
 
@@ -615,6 +608,37 @@ export default function ClassesPage() {
         <h1 className="text-3xl font-semibold text-neutral-900">Gestion des classes</h1>
         <p className="text-sm text-neutral-600 mt-1">Créez et gérez les classes de votre école</p>
       </div>
+
+      <Card className="border border-neutral-200 shadow-sm">
+        <div className="p-4 sm:p-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Année scolaire affichée</label>
+              <select
+                value={selectedYearId}
+                onChange={(e) => {
+                  const yearId = e.target.value;
+                  setSelectedYearId(yearId);
+                  const year = years.find((y: any) => y.id === yearId) || null;
+                  setCurrentYear(year);
+                }}
+                className="w-full px-4 py-2 border border-neutral-300 rounded-lg"
+              >
+                {years.map((year: any) => (
+                  <option key={year.id} value={year.id}>
+                    {year.name}{year.is_current ? ' (Actuelle)' : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <p className="text-sm text-neutral-600">
+              {selectedYearId
+                ? `Affichage limité à l'année: ${years.find((y: any) => y.id === selectedYearId)?.name || ''}`
+                : 'Affichage de toutes les années scolaires'}
+            </p>
+          </div>
+        </div>
+      </Card>
 
       {selectedClass && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -1382,6 +1406,7 @@ export default function ClassesPage() {
                 <div>
                   <h3 className="font-semibold text-neutral-900">{cls.name}</h3>
                   <p className="text-xs text-neutral-600">{cls.level}</p>
+                  {cls.year_name && <p className="text-xs text-neutral-500">Année: {cls.year_name}</p>}
                 </div>
                 <Button
                   variant="ghost"

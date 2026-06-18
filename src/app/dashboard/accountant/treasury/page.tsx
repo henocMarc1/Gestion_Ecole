@@ -9,6 +9,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { formatCurrency, formatDate } from '@/utils/helpers';
+import { useSchoolYear } from '@/context/SchoolYearContext';
 
 interface Transaction {
   id: string;
@@ -23,6 +24,7 @@ interface Transaction {
 
 export default function TreasuryPage() {
   const { user } = useAuth();
+  const { selectedYear } = useSchoolYear();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -64,7 +66,7 @@ export default function TreasuryPage() {
     if (user?.school_id) {
       loadTransactions();
     }
-  }, [user?.school_id]);
+  }, [user?.school_id, selectedYear?.id]);
 
   async function loadTransactions() {
     try {
@@ -76,27 +78,35 @@ export default function TreasuryPage() {
       const { data: manualTransactions } = await supabase
         .from('treasury_transactions')
         .select('*')
-        .eq('school_id', school_id);
+        .eq('school_id', school_id)
+        .gte('date', selectedYear?.start_date || '1900-01-01')
+        .lte('date', selectedYear?.end_date || '2999-12-31');
 
       // Charger les paiements de frais de scolarité (REVENUS/INFLOW)
       const { data: tuitionPayments } = await supabase
         .from('tuition_payments')
         .select('id, amount, payment_date, student_id')
-        .eq('school_id', school_id);
+        .eq('school_id', school_id)
+        .gte('payment_date', selectedYear?.start_date || '1900-01-01')
+        .lte('payment_date', selectedYear?.end_date || '2999-12-31');
 
       // Charger les factures payées (DÉPENSES/OUTFLOW)
       const { data: paidInvoices } = await supabase
         .from('invoices')
         .select('id, amount, created_at, title')
         .eq('school_id', school_id)
-        .eq('status', 'PAID');
+        .eq('status', 'PAID')
+        .gte('created_at', selectedYear?.start_date || '1900-01-01')
+        .lte('created_at', selectedYear?.end_date || '2999-12-31');
 
       // Charger les salaires payés (DÉPENSES/OUTFLOW)
       const { data: paidPayrolls } = await supabase
         .from('payrolls')
         .select('id, net_salary, created_at, employee_name, period')
         .eq('school_id', school_id)
-        .eq('status', 'PAID');
+        .eq('status', 'PAID')
+        .gte('created_at', selectedYear?.start_date || '1900-01-01')
+        .lte('created_at', selectedYear?.end_date || '2999-12-31');
 
       // Convertir en format de transaction
       const convertedTransactions: Transaction[] = [];
@@ -219,7 +229,10 @@ export default function TreasuryPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-neutral-900">Trésorerie</h1>
-          <p className="text-sm text-neutral-600">Suivi de trésorerie et flux de caisse</p>
+          <p className="text-sm text-neutral-600">
+            Suivi de trésorerie et flux de caisse
+            {selectedYear?.name ? ` - Année: ${selectedYear.name}` : ''}
+          </p>
         </div>
         <Button onClick={() => setIsModalOpen(true)}>
           <Icons.Plus className="h-4 w-4 mr-2" />

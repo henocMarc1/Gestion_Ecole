@@ -4,6 +4,47 @@ import { test, expect } from '@playwright/test';
  * Tests E2E pour le flow d'authentification et redirection
  */
 
+type RoleKey =
+  | 'SUPER_ADMIN'
+  | 'ADMIN'
+  | 'SECRETARY'
+  | 'ACCOUNTANT'
+  | 'TEACHER'
+  | 'PARENT'
+  | 'HR';
+
+type Credentials = {
+  email: string;
+  password: string;
+};
+
+const DEFAULT_PASSWORD = process.env.E2E_PASSWORD || 'Test123456!';
+
+function getCredentials(role: RoleKey): Credentials {
+  const defaults: Record<RoleKey, string> = {
+    SUPER_ADMIN: 'superadmin@ecole.ci',
+    ADMIN: 'admin@ecole-etoiles.ci',
+    SECRETARY: 'secretaire@ecole-etoiles.ci',
+    ACCOUNTANT: 'comptable@ecole-etoiles.ci',
+    TEACHER: 'enseignant1@ecole-etoiles.ci',
+    PARENT: 'parent.yao@gmail.com',
+    HR: process.env.E2E_HR_EMAIL || '',
+  };
+
+  return {
+    email: process.env[`E2E_${role}_EMAIL`] || defaults[role],
+    password: process.env[`E2E_${role}_PASSWORD`] || DEFAULT_PASSWORD,
+  };
+}
+
+async function loginAs(page: any, role: RoleKey) {
+  const { email, password } = getCredentials(role);
+  await page.goto('/login');
+  await page.fill('input[type="email"]', email);
+  await page.fill('input[type="password"]', password);
+  await page.click('button[type="submit"]');
+}
+
 test.describe('Authentication Flow', () => {
   test('should redirect to login when not authenticated', async ({ page }) => {
     await page.goto('/dashboard');
@@ -241,5 +282,67 @@ test.describe('Security - RLS Enforcement', () => {
     await expect(
       page.locator('text=Non autorisé').or(page.locator('text=Élève non trouvé'))
     ).toBeVisible({ timeout: 3000 });
+  });
+});
+
+test.describe('Admin - Smoke Navigation', () => {
+  test.beforeEach(async ({ page }) => {
+    await loginAs(page, 'ADMIN');
+    await page.waitForURL(/\/dashboard\/admin/, { timeout: 8000 });
+  });
+
+  test('should access admin dashboard and classes', async ({ page }) => {
+    await expect(page).toHaveURL(/\/dashboard\/admin/);
+
+    await page.goto('/dashboard/admin/classes');
+    await expect(page).toHaveURL(/\/dashboard\/admin\/classes/);
+    await expect(page.locator('h1')).toContainText(/Classes|classe/i);
+  });
+});
+
+test.describe('Secretary - Smoke Navigation', () => {
+  test.beforeEach(async ({ page }) => {
+    await loginAs(page, 'SECRETARY');
+    await page.waitForURL(/\/dashboard\/secretary/, { timeout: 8000 });
+  });
+
+  test('should access secretary dashboard and student pages', async ({ page }) => {
+    await expect(page).toHaveURL(/\/dashboard\/secretary/);
+
+    await page.goto('/dashboard/secretary/students');
+    await expect(page).toHaveURL(/\/dashboard\/secretary\/students/);
+  });
+});
+
+test.describe('Super Admin - Smoke Navigation', () => {
+  test.beforeEach(async ({ page }) => {
+    await loginAs(page, 'SUPER_ADMIN');
+    await page.waitForURL(/\/dashboard\/super-admin/, { timeout: 8000 });
+  });
+
+  test('should access super admin dashboard and accounts', async ({ page }) => {
+    await expect(page).toHaveURL(/\/dashboard\/super-admin/);
+
+    await page.goto('/dashboard/super-admin/accounts');
+    await expect(page).toHaveURL(/\/dashboard\/super-admin\/accounts/);
+    await expect(page.locator('body')).toContainText(/utilisateur|compte/i);
+  });
+});
+
+test.describe('HR - Smoke Navigation', () => {
+  test.beforeEach(async ({ page }) => {
+    if (!getCredentials('HR').email) {
+      test.skip(true, 'E2E_HR_EMAIL non défini');
+    }
+
+    await loginAs(page, 'HR');
+    await page.waitForURL(/\/dashboard\/hr/, { timeout: 8000 });
+  });
+
+  test('should access hr dashboard and attendance', async ({ page }) => {
+    await expect(page).toHaveURL(/\/dashboard\/hr/);
+
+    await page.goto('/dashboard/hr/attendance');
+    await expect(page).toHaveURL(/\/dashboard\/hr\/attendance/);
   });
 });

@@ -9,10 +9,12 @@ import { useAuth } from '@/hooks/useAuth';
 import { Icons } from '@/components/ui/Icons';
 import { cn, formatCurrency, formatDate } from '@/utils/helpers';
 import { toast, Toaster } from 'sonner';
+import { useSchoolYear } from '@/context/SchoolYearContext';
 
 export default function AccountantDashboard() {
   const router = useRouter();
   const { user, signOut } = useAuth();
+  const { selectedYear } = useSchoolYear();
   const [stats, setStats] = useState({
     totalInvoices: 0,
     paidInvoices: 0,
@@ -32,7 +34,7 @@ export default function AccountantDashboard() {
       loadStats();
       loadRecentTransactions();
     }
-  }, [user?.school_id]);
+  }, [user?.school_id, selectedYear?.id]);
 
   const loadRecentTransactions = async () => {
     try {
@@ -43,6 +45,8 @@ export default function AccountantDashboard() {
         .from('treasury_transactions')
         .select('*')
         .eq('school_id', school_id)
+        .gte('date', selectedYear?.start_date || '1900-01-01')
+        .lte('date', selectedYear?.end_date || '2999-12-31')
         .order('date', { ascending: false })
         .limit(5);
 
@@ -61,27 +65,35 @@ export default function AccountantDashboard() {
       const { data: invoices } = await supabase
         .from('invoices')
         .select('*')
-        .eq('school_id', school_id);
+        .eq('school_id', school_id)
+        .gte('created_at', selectedYear?.start_date || '1900-01-01')
+        .lte('created_at', selectedYear?.end_date || '2999-12-31');
 
       // Récupérer les paiements généraux (pas utilisé pour revenus)
       const { data: payments } = await supabase
         .from('payments')
         .select('*')
         .eq('status', 'COMPLETED')
-        .eq('school_id', school_id);
+        .eq('school_id', school_id)
+        .gte('created_at', selectedYear?.start_date || '1900-01-01')
+        .lte('created_at', selectedYear?.end_date || '2999-12-31');
 
       // Paiements de frais de scolarité (REVENUS)
       const { data: tuitionPayments } = await supabase
         .from('tuition_payments')
         .select('*')
-        .eq('school_id', school_id);
+        .eq('school_id', school_id)
+        .gte('payment_date', selectedYear?.start_date || '1900-01-01')
+        .lte('payment_date', selectedYear?.end_date || '2999-12-31');
 
       // Salaires payés (DÉPENSES)
       const { data: payrolls } = await supabase
         .from('payrolls')
         .select('*')
         .eq('school_id', school_id)
-        .eq('status', 'PAID');
+        .eq('status', 'PAID')
+        .gte('created_at', selectedYear?.start_date || '1900-01-01')
+        .lte('created_at', selectedYear?.end_date || '2999-12-31');
 
       // Revenus du mois en cours (SEULEMENT frais de scolarité)
       const currentMonth = new Date().toISOString().slice(0, 7);
@@ -93,7 +105,9 @@ export default function AccountantDashboard() {
       const { data: treasury } = await supabase
         .from('treasury_transactions')
         .select('*')
-        .eq('school_id', school_id);
+        .eq('school_id', school_id)
+        .gte('date', selectedYear?.start_date || '1900-01-01')
+        .lte('date', selectedYear?.end_date || '2999-12-31');
 
       const cashFlow = treasury?.reduce((sum, t) => {
         return t.type === 'INFLOW' ? sum + t.amount : sum - t.amount;
@@ -141,7 +155,10 @@ export default function AccountantDashboard() {
             <div className="space-y-2">
               <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">Finance</span>
               <h1 className="text-3xl font-semibold text-neutral-900">Gestion financière</h1>
-              <p className="text-sm text-neutral-600 max-w-2xl">Flux de facturation, paiements et relances en un clin d'œil.</p>
+              <p className="text-sm text-neutral-600 max-w-2xl">
+                Flux de facturation, paiements et relances en un clin d'œil.
+                {selectedYear?.name ? ` Année: ${selectedYear.name}.` : ''}
+              </p>
               <div className="flex flex-wrap gap-2 text-xs text-neutral-600">
                 <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-white/80 border border-neutral-200">
                   <Icons.FileText className="w-3.5 h-3.5 text-neutral-700" /> {stats.totalInvoices} factures

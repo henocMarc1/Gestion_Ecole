@@ -6,6 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { AppShell } from '@/components/layout/AppShell';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { supabase } from '@/lib/supabase';
+import { SchoolYearProvider } from '@/context/SchoolYearContext';
 
 export default function DashboardLayout({
   children,
@@ -66,7 +67,9 @@ export default function DashboardLayout({
 
   return (
     <ProtectedRoute>
-      <AppShell>{children}</AppShell>
+      <SchoolYearProvider schoolId={user?.school_id}>
+        <AppShell>{children}</AppShell>
+      </SchoolYearProvider>
     </ProtectedRoute>
   );
 }

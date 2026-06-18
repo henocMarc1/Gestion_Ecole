@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Icons } from '@/components/ui/Icons';
 import { cn } from '@/utils/helpers';
 import { supabase } from '@/lib/supabase';
+import { SchoolYearSelector } from '@/components/layout/SchoolYearSelector';
 
 interface NavItem {
   label: string;
@@ -226,6 +227,7 @@ export function AppShell({ children }: AppShellProps) {
           </div>
 
           <div className="flex items-center gap-3">
+            <SchoolYearSelector />
             <Link 
               href="/dashboard/notifications"
               className="relative p-2 rounded-lg hover:bg-neutral-100 transition-base"

@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Icons } from '@/components/ui/Icons';
 import { toast } from 'sonner';
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
+import { useSchoolYear } from '@/context/SchoolYearContext';
 
 interface AdminStats {
   totalStudents: number;
@@ -29,6 +30,7 @@ interface AdminStats {
 
 export default function AdminDashboard() {
   const { user } = useAuth();
+  const { selectedYearId, selectedYear } = useSchoolYear();
   const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState<AdminStats>({
     totalStudents: 0,
@@ -51,19 +53,39 @@ export default function AdminDashboard() {
     try {
       if (!user?.school_id) return;
 
-      const { count: studentsCount, error: studentsError } = await supabase
-        .from('students')
-        .select('id', { count: 'exact', head: true })
-        .eq('school_id', user.school_id)
-        .is('deleted_at', null);
-      if (studentsError) throw studentsError;
-
-      const { count: classesCount, error: classesError } = await supabase
+      let classesQuery = supabase
         .from('classes')
-        .select('id', { count: 'exact', head: true })
+        .select('id')
         .eq('school_id', user.school_id)
         .is('deleted_at', null);
-      if (classesError) throw classesError;
+
+      if (selectedYearId) {
+        classesQuery = classesQuery.eq('year_id', selectedYearId);
+      }
+
+      const { data: classRows, error: classRowsError } = await classesQuery;
+      if (classRowsError) throw classRowsError;
+
+      const classIds = (classRows || []).map((c) => c.id);
+
+      let studentsQuery = supabase
+        .from('students')
+        .select('id')
+        .eq('school_id', user.school_id)
+        .is('deleted_at', null);
+
+      if (classIds.length > 0) {
+        studentsQuery = studentsQuery.in('class_id', classIds);
+      } else if (selectedYearId) {
+        studentsQuery = studentsQuery.eq('id', '__none__');
+      }
+
+      const { data: studentRows, error: studentsError } = await studentsQuery;
+      if (studentsError) throw studentsError;
+      const studentsCount = studentRows?.length || 0;
+      const studentIds = (studentRows || []).map((s) => s.id);
+
+      const classesCount = classIds.length;
 
       const { count: teachersCount, error: teachersError } = await supabase
         .from('users')
@@ -72,19 +94,33 @@ export default function AdminDashboard() {
         .eq('school_id', user.school_id);
       if (teachersError) throw teachersError;
 
-      const { data: yearData, error: yearError } = await supabase
-        .from('years')
-        .select('name')
-        .eq('school_id', user.school_id)
-        .eq('is_current', true)
-        .single();
-      if (yearError && yearError.code !== 'PGRST116') throw yearError;
+      let yearData = null as { name?: string } | null;
+      if (selectedYear?.name) {
+        yearData = { name: selectedYear.name };
+      } else {
+        const { data, error: yearError } = await supabase
+          .from('years')
+          .select('name')
+          .eq('school_id', user.school_id)
+          .eq('is_current', true)
+          .single();
+        if (yearError && yearError.code !== 'PGRST116') throw yearError;
+        yearData = data;
+      }
 
       const today = new Date().toISOString().split('T')[0];
-      const { data: todayAttendance, error: attendanceError } = await supabase
+      let todayAttendanceQuery = supabase
         .from('attendance')
         .select('*')
         .eq('date', today);
+
+      if (studentIds.length > 0) {
+        todayAttendanceQuery = todayAttendanceQuery.in('student_id', studentIds);
+      } else if (selectedYearId) {
+        todayAttendanceQuery = todayAttendanceQuery.eq('id', '__none__');
+      }
+
+      const { data: todayAttendance, error: attendanceError } = await todayAttendanceQuery;
       if (attendanceError && attendanceError.code !== 'PGRST116') throw attendanceError;
 
       const present = todayAttendance?.filter((a) => a.status === 'PRESENT').length || 0;
@@ -93,7 +129,7 @@ export default function AdminDashboard() {
       const total = todayAttendance?.length || 0;
       const attendanceRate = total > 0 ? Math.round((present / total) * 100) : 0;
 
-      const { data: recentAbsences, error: absencesError } = await supabase
+      let absencesQuery = supabase
         .from('attendance')
         .select(`
           status,
@@ -104,6 +140,14 @@ export default function AdminDashboard() {
         .in('status', ['ABSENT', 'LATE'])
         .order('date', { ascending: false })
         .limit(10);
+
+      if (studentIds.length > 0) {
+        absencesQuery = absencesQuery.in('student_id', studentIds);
+      } else if (selectedYearId) {
+        absencesQuery = absencesQuery.eq('id', '__none__');
+      }
+
+      const { data: recentAbsences, error: absencesError } = await absencesQuery;
       if (absencesError && absencesError.code !== 'PGRST116') throw absencesError;
 
       setStats({
@@ -129,7 +173,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     loadStats();
-  }, [user?.school_id]);
+  }, [user?.school_id, selectedYearId, selectedYear?.name]);
 
   const filteredAbsences = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();

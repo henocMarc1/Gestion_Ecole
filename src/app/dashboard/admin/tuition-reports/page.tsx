@@ -8,6 +8,7 @@ import { Icons } from '@/components/ui/Icons';
 import { toast } from 'sonner';
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
 import { exportToExcel, exportToPDFTable } from '@/utils/exportUtils';
+import { useSchoolYear } from '@/context/SchoolYearContext';
 import {
   DollarSign,
   TrendingUp,
@@ -55,6 +56,7 @@ interface GlobalStats {
 
 export default function AdminTuitionReportsPage() {
   const { user } = useAuth();
+  const { selectedYearId, selectedYear } = useSchoolYear();
   const [stats, setStats] = useState<GlobalStats | null>(null);
   const [studentDetails, setStudentDetails] = useState<StudentDetail[]>([]);
   const [filteredStudents, setFilteredStudents] = useState<StudentDetail[]>([]);
@@ -82,7 +84,7 @@ export default function AdminTuitionReportsPage() {
     if (user?.school_id) {
       loadReportData();
     }
-  }, [user]);
+  }, [user?.school_id, selectedYearId, selectedYear?.name]);
 
   useEffect(() => {
     filterStudents();
@@ -94,21 +96,38 @@ export default function AdminTuitionReportsPage() {
     setIsLoading(true);
     try {
       // Récupérer les classes
-      const { data: classesData } = await supabase
+      let classesQuery = supabase
         .from('classes')
         .select('id, name')
         .eq('school_id', user.school_id)
         .is('deleted_at', null)
         .order('name');
 
+      if (selectedYearId) {
+        classesQuery = classesQuery.eq('year_id', selectedYearId);
+      }
+
+      const { data: classesData } = await classesQuery;
+
       setClasses(classesData || []);
 
       // Récupérer tous les élèves avec leurs infos
-      const { data: studentsData } = await supabase
+      let studentsQuery = supabase
         .from('students')
         .select('id, first_name, last_name, matricule, class_id, classes(name)')
         .eq('school_id', user.school_id)
         .is('deleted_at', null);
+
+      if (selectedYearId) {
+        const classIds = (classesData || []).map((c: any) => c.id);
+        if (classIds.length > 0) {
+          studentsQuery = studentsQuery.in('class_id', classIds);
+        } else {
+          studentsQuery = studentsQuery.eq('id', '__none__');
+        }
+      }
+
+      const { data: studentsData } = await studentsQuery;
 
       if (!studentsData) {
         setIsLoading(false);
@@ -119,14 +138,19 @@ export default function AdminTuitionReportsPage() {
       const studentsWithStats: StudentDetail[] = await Promise.all(
         (studentsData || []).map(async (student: any) => {
           // Frais
-          const { data: feeData } = await supabase
+          let feeQuery = supabase
             .from('tuition_fees')
             .select('*')
             .eq('class_id', student.class_id)
             .eq('school_id', user.school_id)
             .order('academic_year', { ascending: false })
-            .limit(1)
-            .maybeSingle();
+            .limit(1);
+
+          if (selectedYear?.name) {
+            feeQuery = feeQuery.eq('academic_year', selectedYear.name);
+          }
+
+          const { data: feeData } = await feeQuery.maybeSingle();
 
           // Paiements
           const { data: paymentsData } = await supabase
@@ -413,7 +437,10 @@ export default function AdminTuitionReportsPage() {
       <div className="flex justify-between items-start">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Rapports de collecte</h1>
-          <p className="text-gray-600 mt-2">Suivi global des paiements des frais de scolarité</p>
+          <p className="text-gray-600 mt-2">
+            Suivi global des paiements des frais de scolarité
+            {selectedYear?.name ? ` - Année: ${selectedYear.name}` : ''}
+          </p>
         </div>
         <div className="flex gap-2">
           <button
